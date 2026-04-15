@@ -88,4 +88,15 @@ class AuthService:
         token = self.create_access_token(tg_id=tg_id, user_id=str(user.id))
         return user, token
 
+    async def _get_or_create_test_user(session: AsyncSession, tg_id: int):
+        """Метод-заглушка для локального тестирования вне Telegram WebApp"""
+        user = await user_repo.get_by_tg_id(session, tg_id=tg_id)
+        if not user:
+            user = await user_repo.create(session, obj_in={
+                "tg_id": tg_id,
+                "username": "test_user",
+                "language_code": "en"
+            })
+        return user
+
 auth_service = AuthService(bot_token=settings.BOT_TOKEN, jwt_secret=settings.JWT_SECRET)

@@ -3,7 +3,7 @@ import { useAuthStore } from '../store/auth';
 
 const apiClient = axios.create({
   // Заглушка. Траефик марштрутизирует /api на наш бэкенд
-  baseURL: import.meta.env.VITE_API_URL || 'https://api.santagym.local/api/v1',
+  baseURL: import.meta.env.VITE_API_URL || 'https://api.gym.santariver.lol/api/v1',
   headers: {
     'Content-Type': 'application/json',
   },
