@@ -17,8 +17,8 @@ services:
       - "--certificatesresolvers.myresolver.acme.tlschallenge=true"
       - "--certificatesresolvers.myresolver.acme.email=admin@santariver.lol"
       - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
-      - "traefik.http.services.backend.loadbalancer.server.port=8000"
-      - "traefik.docker.network=proxy_network"
+
+
     ports:
       - "80:80"
       - "443:443"
@@ -77,6 +77,8 @@ services:
       - "traefik.http.routers.backend.entrypoints=websecure"
       - "traefik.http.routers.backend.tls.certresolver=myresolver"
       - "traefik.http.services.backend.loadbalancer.server.port=8000"
+      - "traefik.docker.network=proxy_network"
+
     networks:
       - proxy_network
       - internal_network
