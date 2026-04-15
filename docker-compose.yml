@@ -9,11 +9,17 @@ services:
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
       - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--certificatesresolvers.myresolver.acme.tlschallenge=true"
+      - "--certificatesresolvers.myresolver.acme.email=admin@santariver.lol"
+      - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
     ports:
       - "80:80"
-      - "8080:8080" # Traefik Dashboard (local only)
+      - "443:443"
+      - "8080:8080"
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "letsencrypt:/letsencrypt"
     networks:
       - proxy_network
 
@@ -53,7 +59,7 @@ services:
       - REDIS_URL=redis://redis:6379/0
       - BOT_TOKEN=${BOT_TOKEN}
       - JWT_SECRET=${JWT_SECRET:-supersecret}
-      - WEBHOOK_URL=${WEBHOOK_URL:-https://bot.local}
+      - WEBHOOK_URL=${WEBHOOK_URL:-https://api.gym.santariver.lol}
     depends_on:
       db:
         condition: service_healthy
@@ -61,19 +67,36 @@ services:
         condition: service_started
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.backend.rule=Host(`api.santagym.local`)"
-      - "traefik.http.routers.backend.entrypoints=web"
+      - "traefik.http.routers.backend.rule=Host(`api.gym.santariver.lol`)"
+      - "traefik.http.routers.backend.entrypoints=websecure"
+      - "traefik.http.routers.backend.tls.certresolver=myresolver"
       - "traefik.http.services.backend.loadbalancer.server.port=8000"
     networks:
       - proxy_network
       - internal_network
 
+  frontend:
+    build:
+      context: ./frontend
+    container_name: santagym_frontend
+    depends_on:
+      - backend
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.frontend.rule=Host(`gym.santariver.lol`)"
+      - "traefik.http.routers.frontend.entrypoints=websecure"
+      - "traefik.http.routers.frontend.tls.certresolver=myresolver"
+      - "traefik.http.services.frontend.loadbalancer.server.port=80"
+    networks:
+      - proxy_network
+
 volumes:
   postgres_data:
   redis_data:
+  letsencrypt:
 
 networks:
   proxy_network:
-    name: proxy_network # Для связи Traefik и backend/frontend
+    name: proxy_network
   internal_network:
-    name: internal_network # Для связи backend с БД и Redis
+    name: internal_network
