@@ -93,6 +93,7 @@ services:
       - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-santa}:${POSTGRES_PASSWORD:-santa_pass}@db:5432/${POSTGRES_DB:-santagym}
       - REDIS_URL=redis://redis:6379/0
       - BOT_TOKEN=${BOT_TOKEN}
+      - JWT_SECRET=${JWT_SECRET:-supersecret}
     depends_on:
       db:
         condition: service_healthy
