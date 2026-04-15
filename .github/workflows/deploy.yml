@@ -1,0 +1,40 @@
+name: Deploy to VPS
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Copy files to server via SCP
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          source: "."
+          target: "/opt/santagym"
+          rm: false
+          exclude: ".git,node_modules,.venv,.idea,.env"
+
+      - name: Execute deployment commands via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            cd /opt/santagym
+            # Create .env if it doesn't exist to prevent compose crashes
+            if [ ! -f .env ]; then touch .env; fi
+            # Rebuild and restart containers
+            docker-compose up -d --build
+            # Cleanup old unused images to prevent disk space issues
+            docker image prune -af
