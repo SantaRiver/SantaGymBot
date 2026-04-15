@@ -7,6 +7,7 @@ class Settings(BaseSettings):
     JWT_SECRET: str
     WEBHOOK_URL: str = ""
     DEBUG: bool = False
+    FRONTEND_URL: str = "https://gym.santariver.lol"
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 

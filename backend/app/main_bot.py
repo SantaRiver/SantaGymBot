@@ -25,7 +25,7 @@ async def cmd_start_handler(message: types.Message):
     """
     # В проде будет реальный URL, на который Traefik смаршрутизирует фронтенд.
     # Пока выведем заглушку
-    web_app_url = "https://google.com" # TODO: Заменить на урл нашего фронта позже
+    web_app_url = "https://gym.santariver.lol" # TODO: Заменить на урл нашего фронта позже
 
     kb = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="🏋️‍♂️ Открыть дневник тренировок", web_app=WebAppInfo(url=web_app_url))]
