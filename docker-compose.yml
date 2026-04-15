@@ -79,6 +79,27 @@ services:
       - proxy_network
       - internal_network
 
+  bot:
+    build:
+      context: ./backend
+    container_name: santagym_bot
+    volumes:
+      - ./backend:/app
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-santa}:${POSTGRES_PASSWORD:-santa_pass}@db:5432/${POSTGRES_DB:-santagym}
+      - REDIS_URL=redis://redis:6379/0
+      - BOT_TOKEN=${BOT_TOKEN}
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      backend:
+        condition: service_started
+    command: ["python", "-m", "app.main_bot"]
+    networks:
+      - internal_network
+
   frontend:
     build:
       context: ./frontend
