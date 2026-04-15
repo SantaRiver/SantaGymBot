@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useAuthStore } from '../store/auth';
-import { PlaySpacer, Dumbbell } from 'lucide-react';
+import { Dumbbell } from 'lucide-react';
 
 export default function Dashboard() {
   const { user, logout } = useAuthStore();
