@@ -29,10 +29,13 @@ export const useAuthStore = create<AuthState>()(
       authenticate: async () => {
         set({ isLoading: true, error: null });
         try {
-          // В Telegram WebApp initData будет возвращать строку, локально - пустую
-          const initData = WebApp.initData || "test_mode=123456789";
-          WebApp.ready(); // Сигнал Телеграму, что WebApp загрузился
-          WebApp.expand(); // Разворачиваем на весь экран
+            // Надежный способ получить WebApp из глобального window, обходя баги минификации @twa-dev/sdk
+            const tWebApp = (window as any).Telegram?.WebApp || WebApp;
+            const initData = tWebApp?.initData || "test_mode=123456789";
+
+            // Вызываем методы только если они существуют (опциональная цепочка)
+            tWebApp?.ready?.();
+            tWebApp?.expand?.();
 
           const response = await apiClient.post('/auth/telegram-auth', {
             initData: initData,
