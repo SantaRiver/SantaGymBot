@@ -180,4 +180,5 @@ mkdir -p /opt/santagym
 cd /opt/santagym
 nano .env
 ```
+
 Fill the `.env` with your variables (`BOT_TOKEN`, `POSTGRES_USER`, etc).
