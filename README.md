@@ -160,3 +160,24 @@ docker compose exec backend alembic upgrade head
 - [ ] Интегрировать графики прогресса по весам (Recharts)
 - [ ] Настроить Celery + Redis Task Queue для отправки push-напоминаний, если юзер не закончил тренировку.
 - [ ] Реализовать Offline-sync (передача сетов батчами, если исчезал интернет).
+
+## Deployment (GitHub Actions)
+
+This project has CI/CD configured using GitHub Actions. Upon pushing to the `main` branch, the code is copied via SCP and started using docker-compose on the target server.
+
+### Setup Server Secrets
+Navigate to **Settings > Secrets and variables > Actions** in your GitHub repository and add:
+- `HOST`: Server IP Address (`204.168.249.237`)
+- `USERNAME`: Server User (`root`)
+- `SSH_KEY`: The private Ed25519 or RSA SSH key to access the VPS
+
+### Initial Server Setup
+Make sure the folder exists and create a `.env` file containing the protected API tokens:
+```bash
+# Connect to your server
+ssh root@204.168.249.237
+mkdir -p /opt/santagym
+cd /opt/santagym
+nano .env
+```
+Fill the `.env` with your variables (`BOT_TOKEN`, `POSTGRES_USER`, etc).
