@@ -22,7 +22,6 @@ jobs:
           source: "."
           target: "/opt/santagym"
           rm: false
-          exclude: ".git,node_modules,.venv,.idea,.env"
 
       - name: Execute deployment commands via SSH
         uses: appleboy/ssh-action@v1.0.3
