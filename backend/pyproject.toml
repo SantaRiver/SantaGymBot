@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "santagym-backend"
+version = "0.1.0"
+description = "Telegram WebApp Gym Tracker Backend"
+authors = ["Santa <santa@example.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.12"
+fastapi = "^0.110.0"
+uvicorn = {extras = ["standard"], version = "^0.29.0"}
+aiogram = "^3.4.1"
+sqlalchemy = "^2.0.28"
+alembic = "^1.13.1"
+asyncpg = "^0.29.0"
+pydantic-settings = "^2.2.1"
+pyjwt = "^2.8.0"
+redis = "^5.0.3"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

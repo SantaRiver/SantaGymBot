@@ -1,0 +1,79 @@
+version: '3.8'
+
+services:
+  traefik:
+    image: traefik:v3.0
+    container_name: traefik
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+    ports:
+      - "80:80"
+      - "8080:8080" # Traefik Dashboard (local only)
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+    networks:
+      - proxy_network
+
+  db:
+    image: postgres:16-alpine
+    container_name: santagym_db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-santa}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-santa_pass}
+      POSTGRES_DB: ${POSTGRES_DB:-santagym}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-santa} -d ${POSTGRES_DB:-santagym}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - internal_network
+
+  redis:
+    image: redis:7-alpine
+    container_name: santagym_redis
+    volumes:
+      - redis_data:/data
+    networks:
+      - internal_network
+
+  backend:
+    build:
+      context: ./backend
+    container_name: santagym_backend
+    volumes:
+      - ./backend:/app
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-santa}:${POSTGRES_PASSWORD:-santa_pass}@db:5432/${POSTGRES_DB:-santagym}
+      - REDIS_URL=redis://redis:6379/0
+      - BOT_TOKEN=${BOT_TOKEN}
+      - JWT_SECRET=${JWT_SECRET:-supersecret}
+      - WEBHOOK_URL=${WEBHOOK_URL:-https://bot.local}
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.backend.rule=Host(`api.santagym.local`)"
+      - "traefik.http.routers.backend.entrypoints=web"
+      - "traefik.http.services.backend.loadbalancer.server.port=8000"
+    networks:
+      - proxy_network
+      - internal_network
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  proxy_network:
+    name: proxy_network # Для связи Traefik и backend/frontend
+  internal_network:
+    name: internal_network # Для связи backend с БД и Redis
