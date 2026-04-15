@@ -45,7 +45,7 @@ export const useAuthStore = create<AuthState>()(
           });
         } catch (error: any) {
           set({
-            error: error.response?.data?.detail || "Authentication failed",
+            error: `Auth error: ${error.message} | URL: ${error.config?.baseURL}${error.config?.url} | Resp:${JSON.stringify(error.response?.data)},
             isLoading: false
           });
         }
