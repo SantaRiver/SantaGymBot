@@ -6,7 +6,11 @@ from typing import Optional, List
 
 def _strip_tz(v: Optional[datetime]) -> Optional[datetime]:
     """Convert timezone-aware datetime to naive UTC for TIMESTAMP WITHOUT TIME ZONE columns."""
-    if v is not None and v.tzinfo is not None:
+    if v is None:
+        return v
+    if isinstance(v, str):
+        v = datetime.fromisoformat(v)
+    if v.tzinfo is not None:
         return v.astimezone(timezone.utc).replace(tzinfo=None)
     return v
 
