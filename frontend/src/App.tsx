@@ -52,7 +52,8 @@ function App() {
     <Router>
       <Routes>
         <Route path="/" element={<RequireAuth><Dashboard /></RequireAuth>} />
-        <Route path="/workout/:id" element={<RequireAuth><WorkoutSession /></RequireAuth>} />
+        <Route path="/workout/:id" element={<RequireAuth><WorkoutSession mode="active" /></RequireAuth>} />
+        <Route path="/history/:id" element={<RequireAuth><WorkoutSession mode="history" /></RequireAuth>} />
       </Routes>
     </Router>
   );
