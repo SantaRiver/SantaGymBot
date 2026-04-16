@@ -1,7 +1,14 @@
 from uuid import UUID
-from datetime import datetime
-from pydantic import BaseModel, Field
+from datetime import datetime, timezone
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional, List
+
+
+def _strip_tz(v: Optional[datetime]) -> Optional[datetime]:
+    """Convert timezone-aware datetime to naive UTC for TIMESTAMP WITHOUT TIME ZONE columns."""
+    if v is not None and v.tzinfo is not None:
+        return v.astimezone(timezone.utc).replace(tzinfo=None)
+    return v
 
 # --- Exercises ---
 class ExerciseBase(BaseModel):
@@ -59,6 +66,11 @@ class WorkoutBase(BaseModel):
     status: str = Field(default="planned", max_length=20)
     notes: Optional[str] = None
 
+    @field_validator("start_time", "end_time", mode="before")
+    @classmethod
+    def strip_timezone(cls, v: Optional[datetime]) -> Optional[datetime]:
+        return _strip_tz(v)
+
 class WorkoutCreate(WorkoutBase):
     pass
 
@@ -68,6 +80,11 @@ class WorkoutUpdate(BaseModel):
     end_time: Optional[datetime] = None
     status: Optional[str] = Field(None, max_length=20)
     notes: Optional[str] = None
+
+    @field_validator("start_time", "end_time", mode="before")
+    @classmethod
+    def strip_timezone(cls, v: Optional[datetime]) -> Optional[datetime]:
+        return _strip_tz(v)
 
 class WorkoutRead(WorkoutBase):
     id: UUID
