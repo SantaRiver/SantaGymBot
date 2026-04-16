@@ -27,6 +27,25 @@ export interface ExerciseRead {
   name: string;
   target_muscle_group: string | null;
   user_id: string | null;
+  visibility: 'system' | 'private' | 'public';
+  created_at: string;
+}
+
+export interface ExerciseCreate {
+  name: string;
+  target_muscle_group?: string;
+}
+
+export interface ExerciseSimilar {
+  id: string;
+  name: string;
+  target_muscle_group: string | null;
+  visibility: 'system' | 'private' | 'public';
+  similarity: number;
+}
+
+export interface ExerciseSimilarResponse {
+  matches: ExerciseSimilar[];
 }
 
 export interface WorkoutExerciseRead {
