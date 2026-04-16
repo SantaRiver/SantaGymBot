@@ -61,6 +61,8 @@ services:
     build:
       context: ./backend
     container_name: santagym_backend
+    ports:
+      - "8000:8000"
     volumes:
       - ./backend:/app
     environment:
@@ -112,6 +114,8 @@ services:
     build:
       context: ./frontend
     container_name: santagym_frontend
+    ports:
+      - "3000:80"
     depends_on:
       - backend
     labels:
