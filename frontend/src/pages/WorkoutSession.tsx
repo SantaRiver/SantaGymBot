@@ -24,7 +24,6 @@ function ActiveWorkoutSession({ id }: { id: string }) {
     addExercise,
     removeExercise,
     moveExercise,
-    discardWorkout,
     elapsedSeconds,
     tickElapsed,
     tickRest,
@@ -37,7 +36,6 @@ function ActiveWorkoutSession({ id }: { id: string }) {
   const [finishing, setFinishing] = useState(false);
   const [isManaging, setIsManaging] = useState(false);
   const [pendingExerciseRemoval, setPendingExerciseRemoval] = useState<WorkoutExerciseRead | null>(null);
-  const [discardConfirmOpen, setDiscardConfirmOpen] = useState(false);
   const [busyExerciseId, setBusyExerciseId] = useState<string | null>(null);
 
   // Load workout if not already in store or ID changed
@@ -67,7 +65,7 @@ function ActiveWorkoutSession({ id }: { id: string }) {
   }, [activeWorkout, isManaging]);
 
   const handleFinish = async () => {
-    if (!activeWorkout || activeWorkout.workout_exercises.length === 0) return;
+    if (!activeWorkout) return;
     setFinishing(true);
     try {
       await finishWorkout();
@@ -111,15 +109,6 @@ function ActiveWorkoutSession({ id }: { id: string }) {
     }
   };
 
-  const handleDiscardWorkout = async () => {
-    try {
-      await discardWorkout();
-      navigate('/', { replace: true });
-    } catch {
-      return;
-    }
-  };
-
   return (
     <div className="p-4 max-w-md mx-auto min-h-screen pb-32">
       <WorkoutHeader
@@ -128,7 +117,6 @@ function ActiveWorkoutSession({ id }: { id: string }) {
         onFinish={handleFinish}
         finishing={finishing}
         canManage={hasExercises}
-        canFinish={permissions.canFinish && hasExercises}
         isManaging={isManaging}
         onToggleManage={() => setIsManaging((value) => !value)}
       />
@@ -146,7 +134,6 @@ function ActiveWorkoutSession({ id }: { id: string }) {
         busyExerciseId={busyExerciseId}
         onMoveExercise={handleMoveExercise}
         onRemoveExercise={setPendingExerciseRemoval}
-        onDiscardWorkout={() => setDiscardConfirmOpen(true)}
       />
 
       <ActiveWorkoutControls onExerciseAdded={handleExerciseAdded} />
@@ -164,17 +151,6 @@ function ActiveWorkoutSession({ id }: { id: string }) {
         confirmTone="danger"
         onCancel={() => setPendingExerciseRemoval(null)}
         onConfirm={handleRemoveExercise}
-      />
-
-      <ConfirmDialog
-        open={discardConfirmOpen}
-        title="Отменить пустую тренировку?"
-        description="Пустая тренировка будет удалена и не попадёт в историю."
-        confirmLabel="Удалить тренировку"
-        cancelLabel="Остаться"
-        confirmTone="danger"
-        onCancel={() => setDiscardConfirmOpen(false)}
-        onConfirm={handleDiscardWorkout}
       />
     </div>
   );
@@ -217,7 +193,6 @@ function ExerciseList({
   busyExerciseId = null,
   onMoveExercise,
   onRemoveExercise,
-  onDiscardWorkout,
 }: {
   workout: WorkoutReadWithDetails;
   canAddSet: boolean;
@@ -225,27 +200,14 @@ function ExerciseList({
   busyExerciseId?: string | null;
   onMoveExercise?: (workoutExerciseId: string, direction: 'up' | 'down') => Promise<void>;
   onRemoveExercise?: (workoutExercise: WorkoutExerciseRead) => void;
-  onDiscardWorkout?: () => void;
 }) {
   if (workout.workout_exercises.length === 0) {
     return (
       <div className="mb-4 rounded-2xl border border-dashed border-tg-theme-hint-color/30 bg-tg-theme-secondary-bg-color/50 px-5 py-8 text-center">
         <p className="text-base font-semibold mb-2">Тренировка пока пустая</p>
-        {onDiscardWorkout ? (
-          <>
-            <p className="text-tg-theme-hint-color text-sm mb-4">
-              Добавьте первое упражнение или удалите пустую тренировку, чтобы она не сохранилась.
-            </p>
-            <button
-              onClick={onDiscardWorkout}
-              className="rounded-xl bg-red-500/10 px-4 py-2.5 text-sm font-semibold text-red-500 active:scale-95 transition-transform"
-            >
-              Удалить пустую тренировку
-            </button>
-          </>
-        ) : (
-          <p className="text-tg-theme-hint-color text-sm">Упражнения не добавлены.</p>
-        )}
+        <p className="text-tg-theme-hint-color text-sm">
+          Добавьте первое упражнение. Если завершить такую тренировку сейчас, она будет удалена.
+        </p>
       </div>
     );
   }

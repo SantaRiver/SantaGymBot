@@ -66,12 +66,14 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
   finishWorkout: async () => {
     const { activeWorkout } = get();
     if (!activeWorkout) return;
-    if (activeWorkout.workout_exercises.length === 0) {
-      set({ error: 'Нельзя завершить пустую тренировку' });
-      return;
-    }
     set({ isLoading: true });
     try {
+      if (activeWorkout.workout_exercises.length === 0) {
+        await workoutsApi.discard(activeWorkout.id);
+        set({ activeWorkout: null, isLoading: false, elapsedSeconds: 0, isRestActive: false, restSeconds: 0 });
+        return;
+      }
+
       await workoutsApi.update(activeWorkout.id, {
         status: 'completed',
         end_time: new Date().toISOString(),

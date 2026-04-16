@@ -28,7 +28,6 @@ interface ActiveHeaderProps {
   onFinish: () => void;
   finishing: boolean;
   canManage: boolean;
-  canFinish: boolean;
   isManaging: boolean;
   onToggleManage: () => void;
 }
@@ -38,7 +37,6 @@ function ActiveHeader({
   onFinish,
   finishing,
   canManage,
-  canFinish,
   isManaging,
   onToggleManage,
 }: ActiveHeaderProps) {
@@ -52,16 +50,14 @@ function ActiveHeader({
             {formatTime(elapsedSeconds)}
           </p>
         </div>
-        {canFinish && (
-          <button
-            onClick={onFinish}
-            disabled={finishing}
-            className="flex items-center gap-1.5 bg-red-500/10 text-red-500 px-4 py-2 rounded-xl font-semibold text-sm active:scale-95 transition-transform disabled:opacity-50"
-          >
-            <StopCircle className="w-4 h-4" />
-            Завершить
-          </button>
-        )}
+        <button
+          onClick={onFinish}
+          disabled={finishing}
+          className="flex items-center gap-1.5 bg-red-500/10 text-red-500 px-4 py-2 rounded-xl font-semibold text-sm active:scale-95 transition-transform disabled:opacity-50"
+        >
+          <StopCircle className="w-4 h-4" />
+          Завершить
+        </button>
       </div>
 
       {canManage && (
@@ -121,7 +117,6 @@ export function WorkoutHeader(props: WorkoutHeaderProps) {
         onFinish={props.onFinish}
         finishing={props.finishing}
         canManage={props.canManage}
-        canFinish={props.canFinish}
         isManaging={props.isManaging}
         onToggleManage={props.onToggleManage}
       />
