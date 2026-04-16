@@ -1,9 +1,24 @@
-import { useEffect } from 'react';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/auth';
+import { useWorkoutStore } from '../store/workout';
 import { Dumbbell } from 'lucide-react';
 
 export default function Dashboard() {
   const { user, logout } = useAuthStore();
+  const { startWorkout } = useWorkoutStore();
+  const navigate = useNavigate();
+  const [starting, setStarting] = useState(false);
+
+  const handleStart = async () => {
+    setStarting(true);
+    try {
+      const workoutId = await startWorkout();
+      navigate(`/workout/${workoutId}`);
+    } catch {
+      setStarting(false);
+    }
+  };
 
   return (
     <div className="p-4 max-w-md mx-auto min-h-screen">
@@ -23,11 +38,12 @@ export default function Dashboard() {
         <p className="text-sm text-tg-theme-hint-color mb-6">Отслеживай свои подходы и прогресс</p>
 
         <button
-          className="bg-tg-theme-button-color text-tg-theme-button-text-color font-semibold py-4 px-8 rounded-xl w-full flex items-center justify-center gap-2 shadow-lg shadow-tg-theme-button-color/30 active:scale-95 transition-transform"
+          onClick={handleStart}
+          disabled={starting}
+          className="bg-tg-theme-button-color text-tg-theme-button-text-color font-semibold py-4 px-8 rounded-xl w-full flex items-center justify-center gap-2 shadow-lg shadow-tg-theme-button-color/30 active:scale-95 transition-transform disabled:opacity-60"
         >
-          {/* @ts-ignore - PlaySpacer as alternative to Play if lucide changed */}
           <Dumbbell className="w-5 h-5" />
-          Старт
+          {starting ? 'Создаём...' : 'Старт'}
         </button>
       </div>
 
@@ -38,7 +54,6 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Кнопка выхода (только для тестов, в ТГ нет логаута) */}
       <button
         onClick={logout}
         className="mt-12 w-full text-center text-red-500 text-sm opacity-50"

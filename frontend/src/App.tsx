@@ -1,10 +1,11 @@
 import { useEffect } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { useAuthStore } from './store/auth'
+import { exercisesApi } from './api/exercises'
 import Dashboard from './pages/Dashboard'
+import WorkoutSession from './pages/WorkoutSession'
 import { Dumbbell } from 'lucide-react'
 
-// Компонент лоадера при инициализации
 const FullScreenLoader = () => (
   <div className="min-h-screen flex flex-col items-center justify-center bg-tg-theme-bg-color">
     <Dumbbell className="w-12 h-12 text-tg-theme-button-color animate-pulse mb-4" />
@@ -12,7 +13,6 @@ const FullScreenLoader = () => (
   </div>
 );
 
-// Компонент для защиты роутов
 function RequireAuth({ children }: { children: JSX.Element }) {
   const { user, token } = useAuthStore();
   return (user && token) ? children : <Navigate to="/" replace />;
@@ -22,9 +22,10 @@ function App() {
   const { token, isLoading, authenticate, error } = useAuthStore();
 
   useEffect(() => {
-    // Если токена нет, стартуем процесс аутентификации через Telegram
     if (!token) {
       authenticate();
+    } else {
+      exercisesApi.seed().catch(() => {});
     }
   }, [token, authenticate]);
 
@@ -51,9 +52,10 @@ function App() {
     <Router>
       <Routes>
         <Route path="/" element={<RequireAuth><Dashboard /></RequireAuth>} />
+        <Route path="/workout/:id" element={<RequireAuth><WorkoutSession /></RequireAuth>} />
       </Routes>
     </Router>
-  )
+  );
 }
 
 export default App
