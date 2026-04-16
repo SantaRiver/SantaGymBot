@@ -25,7 +25,12 @@ class Exercise(Base, UUIDMixin):
 
     user_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=True)
     name: Mapped[str] = mapped_column(String(255))
+    name_normalized: Mapped[str] = mapped_column(Text)
     target_muscle_group: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    visibility: Mapped[str] = mapped_column(String(20), default="system")
+    canonical_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        ForeignKey("exercises.id", ondelete="SET NULL"), nullable=True
+    )
     created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
 
     user: Mapped[Optional["User"]] = relationship(back_populates="custom_exercises")
