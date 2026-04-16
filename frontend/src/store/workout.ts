@@ -1,5 +1,6 @@
 import { create } from 'zustand';
-import { workoutsApi, WorkoutReadWithDetails } from '../api/workouts';
+import { workoutsApi } from '../api/workouts';
+import type { WorkoutReadWithDetails } from '../api/workouts';
 
 interface WorkoutState {
   activeWorkout: WorkoutReadWithDetails | null;
