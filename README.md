@@ -175,7 +175,7 @@ Navigate to **Settings > Secrets and variables > Actions** in your GitHub reposi
 Make sure the folder exists and create a `.env` file containing the protected API tokens:
 ```bash
 # Connect to your server
-ssh root@204.168.249.237
+ssh root@YOUR_SERVER_IP
 mkdir -p /opt/santagym
 cd /opt/santagym
 nano .env
