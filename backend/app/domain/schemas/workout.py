@@ -21,7 +21,7 @@ class ExerciseRead(ExerciseBase):
 # --- Sets ---
 class WorkoutSetBase(BaseModel):
     reps: Optional[int] = Field(None, ge=1)
-    weight: Optional[float] = Field(None, ge=0)
+    weight: Optional[float] = None
     duration_seconds: Optional[int] = Field(None, ge=0)
     rest_time_after_seconds: Optional[int] = Field(None, ge=0)
 
