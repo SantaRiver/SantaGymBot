@@ -36,16 +36,16 @@ class WorkoutService:
 
     @staticmethod
     async def add_exercise_to_workout(session: AsyncSession, user_id: UUID, workout_id: UUID, data: WorkoutExerciseCreate) -> WorkoutExercise:
-        # Проверяем, что тренировка принадлежит юзеру
         await WorkoutService.get_workout_details(session, user_id, workout_id)
 
-        # Проверяем существование упражнения
         exercise = await exercise_repo.get(session, id=data.exercise_id)
         if not exercise or (exercise.user_id and exercise.user_id != user_id):
             raise HTTPException(status_code=400, detail="Exercise not available")
 
         workout_exercise = await workout_exercise_repo.create(session, obj_in={**data.model_dump(), "workout_id": workout_id})
-        return workout_exercise
+
+        # Re-fetch с eager loading, иначе FastAPI упадёт на сериализации relationships
+        return await workout_exercise_repo.get_with_details(session, workout_exercise.id)
 
     @staticmethod
     async def add_set_to_exercise(session: AsyncSession, user_id: UUID, workout_exercise_id: UUID, data: WorkoutSetCreate) -> WorkoutSet:
