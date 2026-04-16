@@ -167,8 +167,8 @@ This project has CI/CD configured using GitHub Actions. Upon pushing to the `mai
 
 ### Setup Server Secrets
 Navigate to **Settings > Secrets and variables > Actions** in your GitHub repository and add:
-- `HOST`: Server IP Address (`204.168.249.237`)
-- `USERNAME`: Server User (`root`)
+- `HOST`: Server IP Address (`YOUR_SERVER_IP`)
+- `USERNAME`: Server User (`YOUR_SERVER_USER`)
 - `SSH_KEY`: The private Ed25519 or RSA SSH key to access the VPS
 
 ### Initial Server Setup
