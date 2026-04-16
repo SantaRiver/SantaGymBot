@@ -114,6 +114,15 @@ class WorkoutExerciseRepository(BaseRepository[WorkoutExercise]):
     def __init__(self):
         super().__init__(WorkoutExercise)
 
+    async def list_for_workout(self, session: AsyncSession, workout_id: UUID) -> List[WorkoutExercise]:
+        stmt = (
+            select(WorkoutExercise)
+            .where(WorkoutExercise.workout_id == workout_id)
+            .order_by(WorkoutExercise.order.asc())
+        )
+        result = await session.execute(stmt)
+        return list(result.scalars().all())
+
     async def get_with_details(self, session: AsyncSession, workout_exercise_id: UUID) -> Optional[WorkoutExercise]:
         stmt = (
             select(WorkoutExercise)
@@ -122,6 +131,20 @@ class WorkoutExerciseRepository(BaseRepository[WorkoutExercise]):
                 selectinload(WorkoutExercise.exercise),
                 selectinload(WorkoutExercise.sets),
             )
+        )
+        result = await session.execute(stmt)
+        return result.scalar_one_or_none()
+
+    async def get_for_workout(
+        self,
+        session: AsyncSession,
+        *,
+        workout_id: UUID,
+        workout_exercise_id: UUID,
+    ) -> Optional[WorkoutExercise]:
+        stmt = select(WorkoutExercise).where(
+            WorkoutExercise.id == workout_exercise_id,
+            WorkoutExercise.workout_id == workout_id,
         )
         result = await session.execute(stmt)
         return result.scalar_one_or_none()

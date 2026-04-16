@@ -1,4 +1,4 @@
-import { ArrowLeft, StopCircle, Timer } from 'lucide-react';
+import { ArrowLeft, Grip, StopCircle, Timer } from 'lucide-react';
 import type { WorkoutReadWithDetails } from '../../api/workouts';
 
 function formatTime(seconds: number): string {
@@ -27,26 +27,54 @@ interface ActiveHeaderProps {
   elapsedSeconds: number;
   onFinish: () => void;
   finishing: boolean;
+  canManage: boolean;
+  canFinish: boolean;
+  isManaging: boolean;
+  onToggleManage: () => void;
 }
 
-function ActiveHeader({ elapsedSeconds, onFinish, finishing }: ActiveHeaderProps) {
+function ActiveHeader({
+  elapsedSeconds,
+  onFinish,
+  finishing,
+  canManage,
+  canFinish,
+  isManaging,
+  onToggleManage,
+}: ActiveHeaderProps) {
   return (
-    <header className="flex justify-between items-center mb-6 pt-4">
-      <div>
-        <h1 className="text-xl font-bold">Тренировка</h1>
-        <p className="text-tg-theme-hint-color text-sm flex items-center gap-1">
-          <Timer className="w-3.5 h-3.5" />
-          {formatTime(elapsedSeconds)}
-        </p>
+    <header className="mb-6 pt-4">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <h1 className="text-xl font-bold">Тренировка</h1>
+          <p className="text-tg-theme-hint-color text-sm flex items-center gap-1">
+            <Timer className="w-3.5 h-3.5" />
+            {formatTime(elapsedSeconds)}
+          </p>
+        </div>
+        {canFinish && (
+          <button
+            onClick={onFinish}
+            disabled={finishing}
+            className="flex items-center gap-1.5 bg-red-500/10 text-red-500 px-4 py-2 rounded-xl font-semibold text-sm active:scale-95 transition-transform disabled:opacity-50"
+          >
+            <StopCircle className="w-4 h-4" />
+            Завершить
+          </button>
+        )}
       </div>
-      <button
-        onClick={onFinish}
-        disabled={finishing}
-        className="flex items-center gap-1.5 bg-red-500/10 text-red-500 px-4 py-2 rounded-xl font-semibold text-sm active:scale-95 transition-transform disabled:opacity-50"
-      >
-        <StopCircle className="w-4 h-4" />
-        Завершить
-      </button>
+
+      {canManage && (
+        <div className="mt-3">
+          <button
+            onClick={onToggleManage}
+            className="flex items-center gap-2 rounded-xl bg-tg-theme-secondary-bg-color px-4 py-2.5 text-sm font-medium active:scale-95 transition-transform"
+          >
+            <Grip className="w-4 h-4 text-tg-theme-hint-color" />
+            {isManaging ? 'Готово' : 'Управлять упражнениями'}
+          </button>
+        </div>
+      )}
     </header>
   );
 }
@@ -87,7 +115,17 @@ type WorkoutHeaderProps =
 
 export function WorkoutHeader(props: WorkoutHeaderProps) {
   if (props.mode === 'active') {
-    return <ActiveHeader elapsedSeconds={props.elapsedSeconds} onFinish={props.onFinish} finishing={props.finishing} />;
+    return (
+      <ActiveHeader
+        elapsedSeconds={props.elapsedSeconds}
+        onFinish={props.onFinish}
+        finishing={props.finishing}
+        canManage={props.canManage}
+        canFinish={props.canFinish}
+        isManaging={props.isManaging}
+        onToggleManage={props.onToggleManage}
+      />
+    );
   }
   return <HistoryHeader workout={props.workout} onBack={props.onBack} />;
 }

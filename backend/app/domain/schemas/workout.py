@@ -48,10 +48,14 @@ class WorkoutSetRead(WorkoutSetBase):
 
 # --- Workout Exercises ---
 class WorkoutExerciseBase(BaseModel):
-    order: int
+    order: int = Field(..., ge=1)
 
 class WorkoutExerciseCreate(WorkoutExerciseBase):
     exercise_id: UUID
+
+
+class WorkoutExerciseReorderRequest(BaseModel):
+    workout_exercise_ids: List[UUID] = Field(..., min_length=1)
 
 class WorkoutExerciseRead(WorkoutExerciseBase):
     id: UUID
