@@ -59,6 +59,10 @@ export const useAuthStore = create<AuthState>()(
       name: 'auth-storage',
       // Мы сохраняем JWT и User в localStorage (для Offline-first в будущем)
       partialize: (state) => ({ token: state.token, user: state.user }),
+      onRehydrateStorage: () => (state) => {
+        // После восстановления из localStorage isLoading должен быть false
+        if (state) state.isLoading = false;
+      },
     }
   )
 );
