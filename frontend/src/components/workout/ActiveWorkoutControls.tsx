@@ -8,11 +8,15 @@ import { useWorkoutSession } from '../../hooks/useWorkoutSession';
 
 interface ActiveWorkoutControlsProps {
   onExerciseAdded: (exercise: ExerciseRead) => void;
+  isManaging?: boolean;
 }
 
-export function ActiveWorkoutControls({ onExerciseAdded }: ActiveWorkoutControlsProps) {
+export function ActiveWorkoutControls({
+  onExerciseAdded,
+  isManaging = false,
+}: ActiveWorkoutControlsProps) {
   const [showCatalog, setShowCatalog] = useState(false);
-  const { stopRest } = useWorkoutStore();
+  const stopRest = useWorkoutStore((state) => state.stopRest);
   const { isRestActive, restSeconds } = useWorkoutSession();
 
   const handleSelect = (exercise: ExerciseRead) => {
@@ -28,15 +32,19 @@ export function ActiveWorkoutControls({ onExerciseAdded }: ActiveWorkoutControls
         <ExerciseCatalogSheet onSelect={handleSelect} onClose={() => setShowCatalog(false)} />
       )}
 
-      <div className="fixed bottom-6 left-4 right-4 max-w-md mx-auto">
-        <button
-          onClick={() => setShowCatalog(true)}
-          className="w-full bg-tg-theme-button-color text-tg-theme-button-text-color font-semibold py-4 rounded-xl flex items-center justify-center gap-2 shadow-lg active:scale-95 transition-transform"
+      {!isManaging && (
+        <div
+          className="sticky bottom-0 z-10 mt-4 bg-gradient-to-t from-tg-theme-bg-color from-70% to-transparent pt-6 pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))]"
         >
-          <Plus className="w-5 h-5" />
-          Добавить упражнение
-        </button>
-      </div>
+          <button
+            onClick={() => setShowCatalog(true)}
+            className="w-full bg-tg-theme-button-color text-tg-theme-button-text-color font-semibold py-4 rounded-xl flex items-center justify-center gap-2 shadow-lg active:scale-95 transition-transform"
+          >
+            <Plus className="w-5 h-5" />
+            Добавить упражнение
+          </button>
+        </div>
+      )}
     </>
   );
 }

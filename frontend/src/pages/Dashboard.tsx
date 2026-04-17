@@ -3,9 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/auth';
 import { useWorkoutStore } from '../store/workout';
 import { useHistoryStore } from '../store/history';
-import { Dumbbell, Calendar, Clock, ChevronRight } from 'lucide-react';
+import { Dumbbell, Calendar, Clock, ChevronRight, Settings } from 'lucide-react';
 import type { WorkoutReadWithDetails } from '../api/workouts';
 import { useWorkoutSession } from '../hooks/useWorkoutSession';
+import { useWorkoutStoreHydration } from '../hooks/useWorkoutStoreHydration';
 
 function formatDate(isoString: string): string {
   return new Date(isoString).toLocaleDateString('ru-RU', {
@@ -112,8 +113,9 @@ function HistorySection() {
 
 export default function Dashboard() {
   const { user, logout } = useAuthStore();
-  const { startWorkout } = useWorkoutStore();
-  const { hasSession, status, isHydrated } = useWorkoutSession();
+  const startWorkout = useWorkoutStore((state) => state.startWorkout);
+  const { hasSession, status } = useWorkoutSession();
+  const { isHydrated, supportsPersistence } = useWorkoutStoreHydration();
   const navigate = useNavigate();
   const [starting, setStarting] = useState(false);
 
@@ -142,8 +144,17 @@ export default function Dashboard() {
           <h1 className="text-2xl font-bold">Привет, {user?.username || 'Спортсмен'}! 👋</h1>
           <p className="text-tg-theme-hint-color text-sm">Готов к новой тренировке?</p>
         </div>
-        <div className="w-10 h-10 rounded-full bg-tg-theme-secondary-bg-color flex items-center justify-center text-tg-theme-button-color font-bold shadow-md">
-          {user?.username?.charAt(0).toUpperCase() || 'S'}
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => navigate('/settings')}
+            className="w-10 h-10 rounded-full bg-tg-theme-secondary-bg-color flex items-center justify-center text-tg-theme-button-color shadow-md active:scale-95 transition-transform"
+            aria-label="Открыть настройки"
+          >
+            <Settings className="w-5 h-5" />
+          </button>
+          <div className="w-10 h-10 rounded-full bg-tg-theme-secondary-bg-color flex items-center justify-center text-tg-theme-button-color font-bold shadow-md">
+            {user?.username?.charAt(0).toUpperCase() || 'S'}
+          </div>
         </div>
       </header>
 
@@ -154,11 +165,11 @@ export default function Dashboard() {
 
         <button
           onClick={handleStart}
-          disabled={starting}
+          disabled={starting || (!isHydrated && supportsPersistence)}
           className="bg-tg-theme-button-color text-tg-theme-button-text-color font-semibold py-4 px-8 rounded-xl w-full flex items-center justify-center gap-2 shadow-lg shadow-tg-theme-button-color/30 active:scale-95 transition-transform disabled:opacity-60"
         >
           <Dumbbell className="w-5 h-5" />
-          {starting ? 'Создаём...' : 'Старт'}
+          {starting ? 'Создаём...' : !isHydrated && supportsPersistence ? 'Загрузка...' : 'Старт'}
         </button>
       </div>
 
@@ -169,7 +180,7 @@ export default function Dashboard() {
 
       <button
         onClick={logout}
-        className="mt-12 w-full text-center text-red-500 text-sm opacity-50"
+        className="mt-12 w-full rounded-xl border border-dashed border-red-500/20 px-4 py-3 text-center text-sm text-red-500/80"
       >
         Сбросить сессию (dev)
       </button>

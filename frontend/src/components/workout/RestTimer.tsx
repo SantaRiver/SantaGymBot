@@ -11,7 +11,10 @@ interface RestTimerProps {
 
 export function RestTimer({ seconds, onSkip }: RestTimerProps) {
   return (
-    <div className="fixed bottom-24 left-4 right-4 bg-tg-theme-secondary-bg-color rounded-2xl p-4 shadow-lg flex items-center justify-between z-20">
+    <div
+      className="fixed left-4 right-4 z-20 flex items-center justify-between rounded-2xl bg-tg-theme-secondary-bg-color p-4 shadow-lg"
+      style={{ bottom: 'calc(6.5rem + env(safe-area-inset-bottom, 0px))' }}
+    >
       <div>
         <p className="text-xs text-tg-theme-hint-color mb-1">Отдых</p>
         <p className="text-3xl font-bold tabular-nums text-tg-theme-button-color">{formatTime(seconds)}</p>

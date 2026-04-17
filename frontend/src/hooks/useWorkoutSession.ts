@@ -1,30 +1,18 @@
 import { useEffect, useState } from 'react';
 import { useWorkoutStore } from '../store/workout';
+import { useSettings } from './useSettings';
 
 export function useWorkoutSession() {
-  const [
-    workoutId,
-    status,
-    startedAt,
-    exercises,
-    restStartedAt,
-    restDurationSeconds,
-    isHydrated,
-    isLoading,
-    isSyncing,
-    error,
-  ] = useWorkoutStore((state) => [
-    state.workoutId,
-    state.status,
-    state.startedAt,
-    state.exercises,
-    state.restStartedAt,
-    state.restDurationSeconds,
-    state.isHydrated,
-    state.isLoading,
-    state.isSyncing,
-    state.error,
-  ]);
+  const workoutId = useWorkoutStore((state) => state.workoutId);
+  const status = useWorkoutStore((state) => state.status);
+  const startedAt = useWorkoutStore((state) => state.startedAt);
+  const exercises = useWorkoutStore((state) => state.exercises);
+  const restStartedAt = useWorkoutStore((state) => state.restStartedAt);
+  const restDurationSeconds = useWorkoutStore((state) => state.restDurationSeconds);
+  const isLoading = useWorkoutStore((state) => state.isLoading);
+  const isSyncing = useWorkoutStore((state) => state.isSyncing);
+  const error = useWorkoutStore((state) => state.error);
+  const { restTimerEnabled, restDuration } = useSettings();
 
   const [now, setNow] = useState(() => Date.now());
 
@@ -39,17 +27,20 @@ export function useWorkoutSession() {
   }, []);
 
   const elapsedSeconds = startedAt === null ? 0 : Math.max(0, Math.floor((now - startedAt) / 1000));
+  const effectiveRestDuration = restTimerEnabled
+    ? restDurationSeconds ?? restDuration
+    : null;
+
   const restSeconds =
-    restStartedAt === null || restDurationSeconds === null
+    restStartedAt === null || effectiveRestDuration === null
       ? 0
-      : Math.max(0, restDurationSeconds - Math.floor((now - restStartedAt) / 1000));
+      : Math.max(0, effectiveRestDuration - Math.floor((now - restStartedAt) / 1000));
 
   return {
     workoutId,
     status,
     startedAt,
     exercises,
-    isHydrated,
     isLoading,
     isSyncing,
     error,

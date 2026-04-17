@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import apiClient from '../api/client';
 import WebApp from '@twa-dev/sdk';
+import { getUserFacingErrorMessage, logDebugError } from '../utils/errors';
 
 interface User {
   id: string;
@@ -19,6 +20,12 @@ interface AuthState {
   logout: () => void;
 }
 
+type TelegramWindow = Window & {
+  Telegram?: {
+    WebApp?: typeof WebApp;
+  };
+};
+
 export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
@@ -30,7 +37,7 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: true, error: null });
         try {
             // Надежный способ получить WebApp из глобального window, обходя баги минификации @twa-dev/sdk
-            const tWebApp = (window as any).Telegram?.WebApp || WebApp;
+            const tWebApp = (window as TelegramWindow).Telegram?.WebApp || WebApp;
             const initData = tWebApp?.initData || "test_mode=123456789";
 
             // Вызываем методы только если они существуют (опциональная цепочка)
@@ -46,9 +53,13 @@ export const useAuthStore = create<AuthState>()(
             user: response.data.user,
             isLoading: false
           });
-        } catch (error: any) {
+        } catch (error: unknown) {
+          logDebugError('auth.authenticate', error);
           set({
-            error: `Auth error: ${error.message} | URL: ${error.config?.baseURL}${error.config?.url} | Resp:${JSON.stringify(error.response?.data)}`,
+            error: getUserFacingErrorMessage(
+              error,
+              'Не удалось войти в приложение. Проверьте соединение и попробуйте снова.',
+            ),
             isLoading: false
           });
         }

@@ -10,6 +10,8 @@ import { WorkoutHeader } from '../components/workout/WorkoutHeader';
 import { ExerciseCard } from '../components/workout/ExerciseCard';
 import { ActiveWorkoutControls } from '../components/workout/ActiveWorkoutControls';
 import { useWorkoutSession } from '../hooks/useWorkoutSession';
+import { useWorkoutStoreHydration } from '../hooks/useWorkoutStoreHydration';
+import { Dialog } from '../components/ui/Dialog';
 
 interface WorkoutSessionProps {
   mode: WorkoutMode;
@@ -22,17 +24,15 @@ function ActiveWorkoutSession({ id }: { id?: string }) {
     elapsedSeconds,
     hasExercises,
     hasSession,
-    isHydrated,
     isLoading,
     error,
   } = useWorkoutSession();
-  const {
-    restoreWorkout,
-    finishWorkout,
-    addExercise,
-    removeExercise,
-    moveExercise,
-  } = useWorkoutStore();
+  const { isHydrated } = useWorkoutStoreHydration();
+  const restoreWorkout = useWorkoutStore((state) => state.restoreWorkout);
+  const finishWorkout = useWorkoutStore((state) => state.finishWorkout);
+  const addExercise = useWorkoutStore((state) => state.addExercise);
+  const removeExercise = useWorkoutStore((state) => state.removeExercise);
+  const moveExercise = useWorkoutStore((state) => state.moveExercise);
 
   const permissions = useWorkoutPermissions('active');
   const [finishing, setFinishing] = useState(false);
@@ -63,7 +63,7 @@ function ActiveWorkoutSession({ id }: { id?: string }) {
     }
   };
 
-  if (!isHydrated || (isLoading && !hasSession && id)) {
+  if ((!isHydrated && id) || (isLoading && !hasSession && id)) {
     return <WorkoutSessionLoader />;
   }
 
@@ -76,7 +76,7 @@ function ActiveWorkoutSession({ id }: { id?: string }) {
   }
 
   return (
-    <div className="p-4 max-w-md mx-auto min-h-screen pb-32">
+    <div className="p-4 max-w-md mx-auto min-h-screen pb-6">
       <WorkoutHeader
         mode="active"
         elapsedSeconds={elapsedSeconds}
@@ -95,7 +95,10 @@ function ActiveWorkoutSession({ id }: { id?: string }) {
         onRemoveExercise={setPendingExerciseRemoval}
       />
 
-      <ActiveWorkoutControls onExerciseAdded={addExercise} />
+      <ActiveWorkoutControls
+        onExerciseAdded={addExercise}
+        isManaging={isManaging}
+      />
 
       <ConfirmDialog
         open={pendingExerciseRemoval !== null}
@@ -226,8 +229,11 @@ function HistoryExerciseList({
 
 function WorkoutSessionLoader() {
   return (
-    <div className="min-h-screen flex items-center justify-center">
-      <p className="text-tg-theme-hint-color">Загрузка...</p>
+    <div className="min-h-screen flex flex-col items-center justify-center gap-3 px-4 text-center">
+      <p className="text-base font-semibold">Загружаем тренировку</p>
+      <p className="text-sm text-tg-theme-hint-color">
+        Подождите немного, мы восстанавливаем упражнения и подходы.
+      </p>
     </div>
   );
 }
@@ -239,9 +245,9 @@ function WorkoutSessionError({ message }: { message: string }) {
       <p className="text-red-500 font-medium">{message}</p>
       <button
         onClick={() => navigate('/', { replace: true })}
-        className="text-tg-theme-button-color text-sm underline"
+        className="rounded-xl bg-tg-theme-secondary-bg-color px-4 py-2 text-sm font-medium text-tg-theme-text-color"
       >
-        Вернуться на главную
+        На главную
       </button>
     </div>
   );
@@ -269,11 +275,15 @@ function ConfirmDialog({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-40 flex items-end bg-black/40 p-4">
-      <div className="w-full max-w-md mx-auto rounded-3xl bg-tg-theme-bg-color p-5 shadow-2xl">
-        <h3 className="text-lg font-semibold mb-2">{title}</h3>
-        <p className="text-sm text-tg-theme-hint-color mb-5">{description}</p>
-        <div className="flex gap-3">
+    <Dialog
+      open={open}
+      onClose={onCancel}
+      title={title}
+      description={description}
+      closeLabel="Закрыть подтверждение"
+      bodyClassName="px-4 sm:px-0"
+    >
+      <div className="flex gap-3">
           <button
             onClick={onCancel}
             className="flex-1 rounded-xl bg-tg-theme-secondary-bg-color px-4 py-3 text-sm font-medium"
@@ -290,9 +300,8 @@ function ConfirmDialog({
           >
             {confirmLabel}
           </button>
-        </div>
       </div>
-    </div>
+    </Dialog>
   );
 }
 

@@ -3,6 +3,8 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import type { ExerciseRead } from '../api/workouts';
 import { workoutsApi } from '../api/workouts';
 import { useToastStore } from './toast';
+import { useSettingsStore } from './settings';
+import { getUserFacingErrorMessage, logDebugError } from '../utils/errors';
 import {
   createEmptyWorkoutSessionSnapshot,
   createLocalExercise,
@@ -22,7 +24,6 @@ let queueRetryTimer: number | null = null;
 type PersistedWorkoutState = WorkoutSessionSnapshot;
 
 interface WorkoutState extends WorkoutSessionSnapshot {
-  isHydrated: boolean;
   isLoading: boolean;
   isSyncing: boolean;
   error: string | null;
@@ -189,12 +190,10 @@ const markSetFailure = (
   }));
 
 const getApiErrorMessage = (error: unknown): string => {
-  if (typeof error === 'object' && error !== null) {
-    const maybeError = error as { response?: { data?: { detail?: string } }; message?: string };
-    return maybeError.response?.data?.detail ?? maybeError.message ?? 'Не удалось синхронизировать тренировку';
-  }
-
-  return 'Не удалось синхронизировать тренировку';
+  return getUserFacingErrorMessage(
+    error,
+    'Не удалось синхронизировать тренировку. Изменения сохранятся при следующей попытке.',
+  );
 };
 
 const parseOptionalInteger = (value: string): number | null => {
@@ -358,7 +357,6 @@ export const useWorkoutStore = create<WorkoutState>()(
   persist(
     (set, get) => ({
       ...emptySnapshot,
-      isHydrated: false,
       isLoading: false,
       isSyncing: false,
       error: null,
@@ -636,15 +634,25 @@ export const useWorkoutStore = create<WorkoutState>()(
           }),
         }));
 
-        get().startRest(90);
+        get().startRest();
         void get().processSyncQueue();
       },
 
-      startRest: (seconds = 90) =>
+      startRest: (seconds) => {
+        const { restTimerEnabled, restDuration } = useSettingsStore.getState();
+        if (!restTimerEnabled) {
+          set({
+            restStartedAt: null,
+            restDurationSeconds: null,
+          });
+          return;
+        }
+
         set({
           restStartedAt: Date.now(),
-          restDurationSeconds: seconds,
-        }),
+          restDurationSeconds: seconds ?? restDuration,
+        });
+      },
 
       stopRest: () =>
         set({
@@ -702,6 +710,7 @@ export const useWorkoutStore = create<WorkoutState>()(
               }));
             } catch (error) {
               const message = getApiErrorMessage(error);
+              logDebugError('workout.processSyncQueue', error);
 
               set((state) => {
                 let exercises = state.exercises;
@@ -758,10 +767,6 @@ export const useWorkoutStore = create<WorkoutState>()(
       name: 'active-workout-session',
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => getPersistedSnapshot(state),
-      onRehydrateStorage: () => (state) => {
-        state?.stopRest();
-        useWorkoutStore.setState({ isHydrated: true });
-      },
     },
   ),
 );

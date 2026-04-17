@@ -3,17 +3,13 @@ import {
   AlertCircle,
   ArrowDown,
   ArrowUp,
-  CheckCircle,
   ChevronDown,
   ChevronUp,
-  CloudOff,
-  PencilLine,
   Plus,
   Trash2,
 } from 'lucide-react';
 import type { WorkoutExerciseRead } from '../../api/workouts';
 import type {
-  SyncStatus,
   WorkoutSessionExercise,
   WorkoutSessionSet,
 } from '../../store/workout-session.types';
@@ -34,30 +30,6 @@ const isLocalExercise = (
   exercise: WorkoutExerciseRead | WorkoutSessionExercise,
 ): exercise is WorkoutSessionExercise => 'localId' in exercise;
 
-const formatSyncLabel = (syncStatus: SyncStatus): string => {
-  if (syncStatus === 'pending') {
-    return 'Сохраняется';
-  }
-
-  if (syncStatus === 'failed') {
-    return 'Не синхронизировано';
-  }
-
-  return 'Сохранено';
-};
-
-const SyncIndicator = ({ syncStatus }: { syncStatus: SyncStatus }) => {
-  if (syncStatus === 'pending') {
-    return <PencilLine className="w-4 h-4 text-amber-500" />;
-  }
-
-  if (syncStatus === 'failed') {
-    return <CloudOff className="w-4 h-4 text-red-500" />;
-  }
-
-  return <CheckCircle className="w-4 h-4 text-green-500" />;
-};
-
 function LocalSetRow({
   exerciseLocalId,
   setItem,
@@ -68,7 +40,8 @@ function LocalSetRow({
   index: number;
 }) {
   const rowRef = useRef<HTMLDivElement | null>(null);
-  const { updateSetDraft, commitSet } = useWorkoutStore();
+  const updateSetDraft = useWorkoutStore((state) => state.updateSetDraft);
+  const commitSet = useWorkoutStore((state) => state.commitSet);
 
   return (
     <div
@@ -83,53 +56,54 @@ function LocalSetRow({
       }}
     >
       <span className="text-xs text-tg-theme-hint-color w-5 text-center">{index + 1}</span>
+      <label className="sr-only" htmlFor={`${setItem.localId}-weight`}>
+        Вес, подход {index + 1}
+      </label>
       <input
-        type="number"
-        inputMode="numeric"
-        placeholder="—"
-        value={setItem.reps}
-        onChange={(event) =>
-          updateSetDraft(exerciseLocalId, setItem.localId, { reps: event.target.value })
-        }
-        className="w-full rounded-lg bg-tg-theme-bg-color border border-tg-theme-hint-color/20 px-3 py-2 text-sm text-center focus:outline-none focus:border-tg-theme-button-color"
-      />
-      <input
+        id={`${setItem.localId}-weight`}
         type="number"
         inputMode="decimal"
-        placeholder="—"
+        placeholder="кг"
+        aria-label={`Вес, подход ${index + 1}`}
         value={setItem.weight}
         onChange={(event) =>
           updateSetDraft(exerciseLocalId, setItem.localId, { weight: event.target.value })
         }
-        className="w-full rounded-lg bg-tg-theme-bg-color border border-tg-theme-hint-color/20 px-3 py-2 text-sm text-center focus:outline-none focus:border-tg-theme-button-color"
+        className="w-full rounded-lg bg-tg-theme-bg-color border border-tg-theme-hint-color/20 px-3 py-2 text-base text-center focus:outline-none focus:border-tg-theme-button-color"
       />
-      <span
-        title={setItem.lastError ?? formatSyncLabel(setItem.syncStatus)}
-        className="flex-shrink-0 w-9 flex justify-center"
-      >
-        <SyncIndicator syncStatus={setItem.syncStatus} />
-      </span>
+      <label className="sr-only" htmlFor={`${setItem.localId}-reps`}>
+        Повторения, подход {index + 1}
+      </label>
+      <input
+        id={`${setItem.localId}-reps`}
+        type="number"
+        inputMode="numeric"
+        placeholder="повт."
+        aria-label={`Повторения, подход ${index + 1}`}
+        value={setItem.reps}
+        onChange={(event) =>
+          updateSetDraft(exerciseLocalId, setItem.localId, { reps: event.target.value })
+        }
+        className="w-full rounded-lg bg-tg-theme-bg-color border border-tg-theme-hint-color/20 px-3 py-2 text-base text-center focus:outline-none focus:border-tg-theme-button-color"
+      />
     </div>
   );
 }
 
 function RemoteSetRow({
-  reps,
   weight,
+  reps,
   index,
 }: {
-  reps: number | null;
   weight: number | null;
+  reps: number | null;
   index: number;
 }) {
   return (
     <div className="flex items-center gap-2 py-1 border-b border-tg-theme-hint-color/10 last:border-0">
       <span className="text-xs text-tg-theme-hint-color w-5 text-center">{index + 1}</span>
-      <span className="w-full text-center text-sm">{reps ?? '—'}</span>
       <span className="w-full text-center text-sm">{weight !== null ? weight : '—'}</span>
-      <span className="flex-shrink-0 w-9 flex justify-center">
-        <CheckCircle className="w-4 h-4 text-green-500" />
-      </span>
+      <span className="w-full text-center text-sm">{reps ?? '—'}</span>
     </div>
   );
 }
@@ -145,7 +119,7 @@ export function ExerciseCard({
   onRemove,
 }: ExerciseCardProps) {
   const [collapsed, setCollapsed] = useState(false);
-  const { addSet } = useWorkoutStore();
+  const addSet = useWorkoutStore((state) => state.addSet);
   const localExercise = isLocalExercise(workoutExercise) ? workoutExercise : null;
   const title = localExercise
     ? workoutExercise.name
@@ -206,20 +180,12 @@ export function ExerciseCard({
       <button
         className="flex justify-between items-center w-full"
         onClick={() => setCollapsed((value) => !value)}
+        aria-expanded={!collapsed}
       >
-        <div className="text-left">
-          <div className="flex items-center gap-2">
-            <p className="font-semibold">{title}</p>
-            {localExercise && (
-              <span
-                className="inline-flex items-center gap-1 rounded-full bg-tg-theme-bg-color px-2 py-1 text-[11px] text-tg-theme-hint-color"
-                title={localExercise.lastError ?? formatSyncLabel(localExercise.syncStatus)}
-              >
-                <SyncIndicator syncStatus={localExercise.syncStatus} />
-                {formatSyncLabel(localExercise.syncStatus)}
-              </span>
-            )}
-          </div>
+        <div className="min-w-0 text-left">
+          <p className="font-semibold [display:-webkit-box] overflow-hidden [-webkit-box-orient:vertical] [-webkit-line-clamp:2]">
+            {title}
+          </p>
           {subtitle && (
             <p className="text-xs text-tg-theme-hint-color">{subtitle}</p>
           )}
@@ -242,9 +208,8 @@ export function ExerciseCard({
           {setCount > 0 && (
             <div className="flex items-center gap-2 mb-1 px-1">
               <span className="w-5" />
-              <span className="w-full text-center text-xs text-tg-theme-hint-color">Повт.</span>
               <span className="w-full text-center text-xs text-tg-theme-hint-color">Кг</span>
-              <span className="flex-shrink-0 w-9" />
+              <span className="w-full text-center text-xs text-tg-theme-hint-color">Повт.</span>
             </div>
           )}
 
@@ -260,8 +225,8 @@ export function ExerciseCard({
             : workoutExercise.sets.map((setItem, index) => (
                 <RemoteSetRow
                   key={setItem.id}
-                  reps={setItem.reps}
                   weight={setItem.weight}
+                  reps={setItem.reps}
                   index={index}
                 />
               ))}
