@@ -138,8 +138,8 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="p-4 max-w-md mx-auto min-h-screen">
-      <header className="flex justify-between items-center mb-8 pt-4">
+    <div className="app-screen">
+      <header className="mb-8 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Привет, {user?.username || 'Спортсмен'}! 👋</h1>
           <p className="text-tg-theme-hint-color text-sm">Готов к новой тренировке?</p>
