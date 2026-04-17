@@ -1,11 +1,16 @@
-# backend/app/application/services/exercise_service.py
+import re
 from typing import List
 from uuid import UUID
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.infrastructure.database.models import Exercise
 from app.infrastructure.database.repositories.workout import exercise_repo
+from app.domain.schemas.exercise import ExerciseCreate, ExerciseSimilar, ExerciseSimilarResponse
+
+
+def _normalize(name: str) -> str:
+    return re.sub(r"\s+", " ", name.strip()).lower()
 
 
 # Idempotent seed: only inserts exercises whose names don't exist yet as system exercises
@@ -54,17 +59,63 @@ class ExerciseService:
         return await exercise_repo.get_all_available_for_user(session, user_id)
 
     @staticmethod
+    async def find_similar(
+        session: AsyncSession,
+        *,
+        name: str,
+        user_id: UUID,
+    ) -> ExerciseSimilarResponse:
+        rows = await exercise_repo.search_similar(
+            session,
+            name_normalized=_normalize(name),
+            user_id=user_id,
+        )
+        return ExerciseSimilarResponse(
+            matches=[
+                ExerciseSimilar(
+                    id=row["id"],
+                    name=row["name"],
+                    target_muscle_group=row["target_muscle_group"],
+                    visibility=row["visibility"],
+                    similarity=float(row["score"]),
+                )
+                for row in rows
+            ]
+        )
+
+    @staticmethod
+    async def create_custom_exercise(
+        session: AsyncSession,
+        *,
+        payload: ExerciseCreate,
+        user_id: UUID,
+    ) -> Exercise:
+        return await exercise_repo.create_custom(
+            session,
+            user_id=user_id,
+            name=payload.name,
+            name_normalized=_normalize(payload.name),
+            target_muscle_group=payload.target_muscle_group,
+        )
+
+    @staticmethod
     async def seed_system_exercises(session: AsyncSession) -> int:
         """Idempotent seed: inserts only missing system exercises. Returns count inserted."""
         # Fetch existing system exercise names
-        stmt = select(Exercise).where(Exercise.user_id == None)
+        stmt = select(Exercise).where(Exercise.visibility == "system")
         result = await session.execute(stmt)
         existing_names = {e.name for e in result.scalars().all()}
 
         inserted = 0
         for data in SYSTEM_EXERCISES:
             if data["name"] not in existing_names:
-                exercise = Exercise(user_id=None, **data)
+                exercise = Exercise(
+                    user_id=None,
+                    name=data["name"],
+                    name_normalized=_normalize(data["name"]),
+                    target_muscle_group=data["target_muscle_group"],
+                    visibility="system",
+                )
                 session.add(exercise)
                 inserted += 1
 
