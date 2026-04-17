@@ -65,20 +65,20 @@ jobs:
         with:
           poetry-version: "1.8.3"
 
-      - name: Configure Poetry
-        run: poetry config virtualenvs.create false
+      - name: Configure Poetry virtualenv
+        run: poetry config virtualenvs.in-project true
 
       - name: Install backend dependencies
         run: poetry install --no-interaction --no-ansi --no-root
 
       - name: Compile backend sources
-        run: python -m compileall app
+        run: poetry run python -m compileall app
 
       - name: Import API app
-        run: python -c "from app.main_api import app; print(app.title)"
+        run: poetry run python -c "from app.main_api import app; print(app.title)"
 
       - name: Render Alembic migration SQL
-        run: alembic upgrade head --sql > /tmp/alembic.sql
+        run: poetry run alembic upgrade head --sql > /tmp/alembic.sql
 
   docker:
     name: Docker build validation
