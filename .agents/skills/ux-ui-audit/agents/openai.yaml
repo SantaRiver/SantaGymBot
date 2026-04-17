@@ -1,0 +1,3 @@
+interface:
+  display_name: "UX/UI Audit"
+  short_description: "Audit SantaGymBot UX/UI with repeatable screenshots"
