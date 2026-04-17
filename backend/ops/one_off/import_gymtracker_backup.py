@@ -5,12 +5,11 @@ import asyncio
 import json
 from pathlib import Path
 
-from app.application.services.backup_import_service import BackupImportError, backup_import_service
-from app.infrastructure.database.database import async_session_maker
+from ops.one_off.gymtracker_import_lib import BackupImportError, import_backup
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Import a GymTracker JSON backup into SantaGymBot")
+    parser = argparse.ArgumentParser(description="One-off import of a GymTracker JSON backup into SantaGymBot")
     parser.add_argument("--backup-file", required=True, help="Path to .gymtracker backup file")
     parser.add_argument("--username", required=True, help="Exact username to import data into")
     parser.add_argument(
@@ -32,9 +31,11 @@ async def main() -> int:
     if not backup_file.exists():
         raise SystemExit(f"Backup file not found: {backup_file}")
 
+    from app.infrastructure.database.database import async_session_maker
+
     async with async_session_maker() as session:
         try:
-            summary = await backup_import_service.import_backup(
+            summary = await import_backup(
                 session,
                 backup_file=backup_file,
                 username=args.username,

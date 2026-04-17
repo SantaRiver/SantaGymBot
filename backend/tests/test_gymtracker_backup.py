@@ -10,7 +10,7 @@ REPO_ROOT = BACKEND_ROOT.parent
 if str(BACKEND_ROOT) not in sys.path:
     sys.path.insert(0, str(BACKEND_ROOT))
 
-from app.application.services.gymtracker_backup import (  # noqa: E402
+from ops.one_off.gymtracker_import_lib import (  # noqa: E402
     BackupValidationError,
     parse_backup_file,
     parse_backup_payload,
