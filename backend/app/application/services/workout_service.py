@@ -4,7 +4,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import HTTPException
 
 from app.domain.schemas.workout import (
-    WorkoutCreate, WorkoutUpdate, WorkoutExerciseCreate, WorkoutExerciseReorderRequest, WorkoutSetCreate
+    WorkoutCreate,
+    WorkoutUpdate,
+    WorkoutExerciseCreate,
+    WorkoutExerciseReorderRequest,
+    WorkoutSetCreate,
+    WorkoutSetUpdate,
 )
 from app.infrastructure.database.repositories.workout import (
     workout_repo, exercise_repo, workout_exercise_repo, workout_set_repo
@@ -139,5 +144,29 @@ class WorkoutService:
 
         workout_set = await workout_set_repo.create(session, obj_in=data.model_dump())
         return workout_set
+
+    @staticmethod
+    async def update_set(
+        session: AsyncSession,
+        user_id: UUID,
+        workout_set_id: UUID,
+        data: WorkoutSetUpdate,
+    ) -> WorkoutSet:
+        workout_set = await workout_set_repo.get(session, id=workout_set_id)
+        if not workout_set:
+            raise HTTPException(status_code=404, detail="Workout set not found")
+
+        workout_ex = await workout_exercise_repo.get(session, id=workout_set.workout_exercise_id)
+        if not workout_ex:
+            raise HTTPException(status_code=404, detail="Workout Exercise not found")
+
+        workout = await WorkoutService.get_workout_details(session, user_id, workout_ex.workout_id)
+        WorkoutService._ensure_workout_is_editable(workout)
+
+        return await workout_set_repo.update(
+            session,
+            db_obj=workout_set,
+            obj_in=data.model_dump(exclude_unset=True),
+        )
 
 workout_service = WorkoutService()

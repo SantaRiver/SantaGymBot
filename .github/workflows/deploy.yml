@@ -1,17 +1,30 @@
 name: Deploy to VPS
 
 on:
-  push:
+  workflow_run:
+    workflows:
+      - CI
     branches:
       - main
+    types:
+      - completed
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
 
 jobs:
   deploy:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
+    environment:
+      name: production
     
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
 
       - name: Copy files to server via SCP
         uses: appleboy/scp-action@v0.1.7
@@ -19,7 +32,7 @@ jobs:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.SSH_KEY }}
-          source: "."
+          source: "backend,frontend,docker-compose.yml,.env.example"
           target: "/opt/santagym"
           rm: false
 
@@ -30,10 +43,20 @@ jobs:
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.SSH_KEY }}
           script: |
+            set -euo pipefail
             cd /opt/santagym
-            # Create .env if it doesn't exist to prevent compose crashes
-            if [ ! -f .env ]; then touch .env; fi
-            # Rebuild and restart containers
-            docker-compose up -d --build
-            # Cleanup old unused images to prevent disk space issues
+            if [ ! -f .env ]; then
+              cp .env.example .env
+              echo "Missing /opt/santagym/.env. Filled it from .env.example; update secrets before next deploy."
+            fi
+
+            docker compose build backend bot frontend
+            docker compose up -d db redis traefik
+            docker compose run --rm backend alembic upgrade head
+            docker compose up -d backend bot frontend
+
+            timeout 120 sh -c 'until docker compose exec -T backend python -c "import urllib.request; urllib.request.urlopen(\"http://127.0.0.1:8000/health\")"; do sleep 5; done'
+            timeout 120 sh -c 'until docker compose exec -T frontend wget --no-verbose --tries=1 --spider http://127.0.0.1/; do sleep 5; done'
+
+            docker compose ps
             docker image prune -af

@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { workoutsApi } from '../api/workouts';
 import type { WorkoutReadWithDetails } from '../api/workouts';
+import { getUserFacingErrorMessage, logDebugError } from '../utils/errors';
 
 interface HistoryState {
   workouts: WorkoutReadWithDetails[];
@@ -21,8 +22,15 @@ export const useHistoryStore = create<HistoryState>((set) => ({
       const all = await workoutsApi.getAll();
       const completed = all.filter((w) => w.status === 'completed');
       set({ workouts: completed, isLoading: false });
-    } catch (e: any) {
-      set({ error: e.message, isLoading: false });
+    } catch (error: unknown) {
+      logDebugError('history.fetchHistory', error);
+      set({
+        error: getUserFacingErrorMessage(
+          error,
+          'Не удалось загрузить историю тренировок. Попробуйте ещё раз.',
+        ),
+        isLoading: false,
+      });
     }
   },
 }));

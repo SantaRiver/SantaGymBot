@@ -54,6 +54,7 @@ function ActiveHeader({
           onClick={onFinish}
           disabled={finishing}
           className="flex items-center gap-1.5 bg-red-500/10 text-red-500 px-4 py-2 rounded-xl font-semibold text-sm active:scale-95 transition-transform disabled:opacity-50"
+          aria-label="Завершить тренировку"
         >
           <StopCircle className="w-4 h-4" />
           Завершить
@@ -65,6 +66,7 @@ function ActiveHeader({
           <button
             onClick={onToggleManage}
             className="flex items-center gap-2 rounded-xl bg-tg-theme-secondary-bg-color px-4 py-2.5 text-sm font-medium active:scale-95 transition-transform"
+            aria-pressed={isManaging}
           >
             <Grip className="w-4 h-4 text-tg-theme-hint-color" />
             {isManaging ? 'Готово' : 'Управлять упражнениями'}

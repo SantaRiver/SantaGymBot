@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
-import { LoaderCircle, Plus, Search, X } from 'lucide-react';
+import { LoaderCircle, Plus, Search } from 'lucide-react';
 
 import { exercisesApi } from '../../api/exercises';
 import type { ExerciseCreate, ExerciseRead, ExerciseSimilar } from '../../api/workouts';
+import { Dialog } from '../ui/Dialog';
+import { getUserFacingErrorMessage, logDebugError } from '../../utils/errors';
 
 interface CreateExerciseModalProps {
   initialName: string;
@@ -44,8 +46,14 @@ export function CreateExerciseModal({
       const response = await exercisesApi.getSimilar(trimmed);
       setMatches(response.matches);
       setHasChecked(true);
-    } catch (err: any) {
-      setError(err.response?.data?.detail ?? err.message ?? 'Не удалось проверить похожие упражнения');
+    } catch (error: unknown) {
+      logDebugError('createExercise.check', error);
+      setError(
+        getUserFacingErrorMessage(
+          error,
+          'Не удалось проверить похожие упражнения. Попробуйте ещё раз.',
+        ),
+      );
     } finally {
       setChecking(false);
     }
@@ -66,27 +74,29 @@ export function CreateExerciseModal({
     try {
       const created = await exercisesApi.create(payload);
       onCreated(created);
-    } catch (err: any) {
-      setError(err.response?.data?.detail ?? err.message ?? 'Не удалось создать упражнение');
+    } catch (error: unknown) {
+      logDebugError('createExercise.create', error);
+      setError(
+        getUserFacingErrorMessage(
+          error,
+          'Не удалось создать упражнение. Попробуйте ещё раз.',
+        ),
+      );
     } finally {
       setCreating(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-40 flex items-end bg-black/45">
-      <div className="w-full rounded-t-3xl bg-tg-theme-bg-color px-4 pb-6 pt-4 shadow-2xl">
-        <div className="mb-4 flex items-center justify-between">
-          <div>
-            <h3 className="text-lg font-bold">Новое упражнение</h3>
-            <p className="text-sm text-tg-theme-hint-color">Проверим дубликаты перед созданием</p>
-          </div>
-          <button onClick={onClose} className="rounded-full p-2">
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-
-        <div className="space-y-3">
+    <Dialog
+      open
+      onClose={onClose}
+      title="Новое упражнение"
+      description="Проверим дубликаты перед созданием."
+      closeLabel="Закрыть создание упражнения"
+      bodyClassName="space-y-3 px-4 sm:px-0"
+    >
+      <div className="space-y-3">
           <input
             type="text"
             placeholder="Название упражнения"
@@ -115,12 +125,12 @@ export function CreateExerciseModal({
             {checking ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
             Найти похожие
           </button>
-        </div>
+      </div>
 
-        {error && <p className="mt-3 text-sm text-red-500">{error}</p>}
+      {error && <p className="mt-3 px-4 text-sm text-red-500 sm:px-0">{error}</p>}
 
-        {hasChecked && (
-          <div className="mt-4">
+      {hasChecked && (
+        <div className="mt-4 px-4 sm:px-0">
             {matches.length > 0 ? (
               <div className="space-y-2">
                 <p className="text-sm font-medium">Похожие упражнения</p>
@@ -174,9 +184,8 @@ export function CreateExerciseModal({
                 Создать упражнение
               </button>
             )}
-          </div>
-        )}
-      </div>
-    </div>
+        </div>
+      )}
+    </Dialog>
   );
 }

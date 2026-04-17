@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { workoutsApi } from '../api/workouts';
 import type { WorkoutReadWithDetails } from '../api/workouts';
+import { getUserFacingErrorMessage, logDebugError } from '../utils/errors';
 
 interface WorkoutDetailState {
   workout: WorkoutReadWithDetails | null;
@@ -17,20 +18,34 @@ export function useWorkoutDetail(id: string): WorkoutDetailState {
 
   useEffect(() => {
     let cancelled = false;
-
-    setState({ workout: null, isLoading: true, error: null });
+    const loadingTimer = window.setTimeout(() => {
+      if (!cancelled) {
+        setState({ workout: null, isLoading: true, error: null });
+      }
+    }, 0);
 
     workoutsApi
       .getById(id)
       .then((workout) => {
         if (!cancelled) setState({ workout, isLoading: false, error: null });
       })
-      .catch((e: any) => {
-        if (!cancelled) setState({ workout: null, isLoading: false, error: e.message });
+      .catch((error: unknown) => {
+        logDebugError('workoutDetail.getById', error);
+        if (!cancelled) {
+          setState({
+            workout: null,
+            isLoading: false,
+            error: getUserFacingErrorMessage(
+              error,
+              'Не удалось открыть тренировку. Попробуйте ещё раз.',
+            ),
+          });
+        }
       });
 
     return () => {
       cancelled = true;
+      window.clearTimeout(loadingTimer);
     };
   }, [id]);
 
