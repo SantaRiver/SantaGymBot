@@ -48,7 +48,11 @@ class Workout(Base, UUIDMixin, TimestampMixin):
     notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
     user: Mapped["User"] = relationship(back_populates="workouts")
-    workout_exercises: Mapped[List["WorkoutExercise"]] = relationship(back_populates="workout", cascade="all, delete-orphan")
+    workout_exercises: Mapped[List["WorkoutExercise"]] = relationship(
+        back_populates="workout",
+        cascade="all, delete-orphan",
+        order_by="WorkoutExercise.order",
+    )
 
 
 class WorkoutExercise(Base, UUIDMixin):
@@ -60,7 +64,11 @@ class WorkoutExercise(Base, UUIDMixin):
 
     workout: Mapped["Workout"] = relationship(back_populates="workout_exercises")
     exercise: Mapped["Exercise"] = relationship(back_populates="workout_exercises")
-    sets: Mapped[List["WorkoutSet"]] = relationship(back_populates="workout_exercise", cascade="all, delete-orphan")
+    sets: Mapped[List["WorkoutSet"]] = relationship(
+        back_populates="workout_exercise",
+        cascade="all, delete-orphan",
+        order_by="WorkoutSet.created_at",
+    )
 
 
 class WorkoutSet(Base, UUIDMixin):

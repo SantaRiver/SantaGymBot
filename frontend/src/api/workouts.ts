@@ -82,9 +82,23 @@ export const workoutsApi = {
     return res.data;
   },
 
+  discard: async (id: string): Promise<void> => {
+    await apiClient.delete(`/workouts/${id}`);
+  },
+
   addExercise: async (workoutId: string, data: { exercise_id: string; order: number }): Promise<WorkoutExerciseRead> => {
     const res = await apiClient.post(`/workouts/${workoutId}/exercises`, data);
     return res.data;
+  },
+
+  removeExercise: async (workoutId: string, workoutExerciseId: string): Promise<void> => {
+    await apiClient.delete(`/workouts/${workoutId}/exercises/${workoutExerciseId}`);
+  },
+
+  reorderExercises: async (workoutId: string, workoutExerciseIds: string[]): Promise<void> => {
+    await apiClient.patch(`/workouts/${workoutId}/exercises/reorder`, {
+      workout_exercise_ids: workoutExerciseIds,
+    });
   },
 
   addSet: async (workoutExerciseId: string, data: { reps?: number; weight?: number; duration_seconds?: number; rest_time_after_seconds?: number; workout_exercise_id: string }): Promise<WorkoutSetRead> => {
