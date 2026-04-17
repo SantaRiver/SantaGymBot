@@ -1,21 +1,23 @@
 import { useState } from 'react';
 import { Plus } from 'lucide-react';
-import { useWorkoutStore } from '../../store/workout';
 import { RestTimer } from './RestTimer';
 import { ExerciseCatalogSheet } from './ExerciseCatalogSheet';
 import type { ExerciseRead } from '../../api/workouts';
+import { useWorkoutStore } from '../../store/workout';
+import { useWorkoutSession } from '../../hooks/useWorkoutSession';
 
 interface ActiveWorkoutControlsProps {
-  onExerciseAdded: (exercise: ExerciseRead) => Promise<void>;
+  onExerciseAdded: (exercise: ExerciseRead) => void;
 }
 
 export function ActiveWorkoutControls({ onExerciseAdded }: ActiveWorkoutControlsProps) {
   const [showCatalog, setShowCatalog] = useState(false);
-  const { isRestActive, restSeconds, stopRest } = useWorkoutStore();
+  const { stopRest } = useWorkoutStore();
+  const { isRestActive, restSeconds } = useWorkoutSession();
 
-  const handleSelect = async (exercise: ExerciseRead) => {
+  const handleSelect = (exercise: ExerciseRead) => {
     setShowCatalog(false);
-    await onExerciseAdded(exercise);
+    onExerciseAdded(exercise);
   };
 
   return (

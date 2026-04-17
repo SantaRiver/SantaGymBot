@@ -4,68 +4,56 @@ import { useWorkoutStore } from '../store/workout';
 import { useWorkoutDetail } from '../hooks/useWorkoutDetail';
 import { useWorkoutPermissions } from '../hooks/useWorkoutPermissions';
 import type { WorkoutMode } from '../hooks/useWorkoutPermissions';
-import type { ExerciseRead, WorkoutExerciseRead, WorkoutReadWithDetails } from '../api/workouts';
+import type { WorkoutReadWithDetails } from '../api/workouts';
+import type { WorkoutSessionExercise } from '../store/workout-session.types';
 import { WorkoutHeader } from '../components/workout/WorkoutHeader';
 import { ExerciseCard } from '../components/workout/ExerciseCard';
 import { ActiveWorkoutControls } from '../components/workout/ActiveWorkoutControls';
+import { useWorkoutSession } from '../hooks/useWorkoutSession';
 
 interface WorkoutSessionProps {
   mode: WorkoutMode;
 }
 
-// ─── Active mode sub-view ────────────────────────────────────────────────────
-
-function ActiveWorkoutSession({ id }: { id: string }) {
+function ActiveWorkoutSession({ id }: { id?: string }) {
   const navigate = useNavigate();
   const {
-    activeWorkout,
-    loadWorkout,
+    exercises,
+    elapsedSeconds,
+    hasExercises,
+    hasSession,
+    isHydrated,
+    isLoading,
+    error,
+  } = useWorkoutSession();
+  const {
+    restoreWorkout,
     finishWorkout,
     addExercise,
     removeExercise,
     moveExercise,
-    elapsedSeconds,
-    tickElapsed,
-    tickRest,
-    isRestActive,
-    isLoading,
-    error,
   } = useWorkoutStore();
 
   const permissions = useWorkoutPermissions('active');
   const [finishing, setFinishing] = useState(false);
   const [isManaging, setIsManaging] = useState(false);
-  const [pendingExerciseRemoval, setPendingExerciseRemoval] = useState<WorkoutExerciseRead | null>(null);
-  const [busyExerciseId, setBusyExerciseId] = useState<string | null>(null);
+  const [pendingExerciseRemoval, setPendingExerciseRemoval] = useState<WorkoutSessionExercise | null>(null);
 
-  // Load workout if not already in store or ID changed
   useEffect(() => {
-    if (!activeWorkout || activeWorkout.id !== id) {
-      loadWorkout(id);
+    if (!id || !isHydrated || hasSession) {
+      return;
     }
-  }, [id]);
 
-  // Elapsed timer — active mode only
-  useEffect(() => {
-    const interval = setInterval(tickElapsed, 1000);
-    return () => clearInterval(interval);
-  }, []);
-
-  // Rest timer — active mode only, only when rest is active
-  useEffect(() => {
-    if (!isRestActive) return;
-    const interval = setInterval(tickRest, 1000);
-    return () => clearInterval(interval);
-  }, [isRestActive]);
+    void restoreWorkout(id);
+  }, [hasSession, id, isHydrated, restoreWorkout]);
 
   useEffect(() => {
-    if (activeWorkout && activeWorkout.workout_exercises.length === 0 && isManaging) {
+    if (!hasExercises && isManaging) {
       setIsManaging(false);
     }
-  }, [activeWorkout, isManaging]);
+  }, [hasExercises, isManaging]);
 
   const handleFinish = async () => {
-    if (!activeWorkout) return;
     setFinishing(true);
     try {
       await finishWorkout();
@@ -75,39 +63,17 @@ function ActiveWorkoutSession({ id }: { id: string }) {
     }
   };
 
-  const handleExerciseAdded = async (exercise: ExerciseRead) => {
-    await addExercise(exercise.id);
-  };
-
-  if (isLoading && !activeWorkout) {
+  if (!isHydrated || (isLoading && !hasSession && id)) {
     return <WorkoutSessionLoader />;
   }
 
-  if (!activeWorkout) {
-    return <WorkoutSessionError message="Тренировка не найдена" />;
+  if (!hasSession && !id) {
+    return <WorkoutSessionError message="Активная тренировка не найдена" />;
   }
 
-  const hasExercises = activeWorkout.workout_exercises.length > 0;
-
-  const handleMoveExercise = async (workoutExerciseId: string, direction: 'up' | 'down') => {
-    setBusyExerciseId(workoutExerciseId);
-    try {
-      await moveExercise(workoutExerciseId, direction);
-    } finally {
-      setBusyExerciseId(null);
-    }
-  };
-
-  const handleRemoveExercise = async () => {
-    if (!pendingExerciseRemoval) return;
-    setBusyExerciseId(pendingExerciseRemoval.id);
-    try {
-      await removeExercise(pendingExerciseRemoval.id);
-      setPendingExerciseRemoval(null);
-    } finally {
-      setBusyExerciseId(null);
-    }
-  };
+  if (!hasSession && id && !isLoading) {
+    return <WorkoutSessionError message={error ?? 'Тренировка не найдена'} />;
+  }
 
   return (
     <div className="p-4 max-w-md mx-auto min-h-screen pb-32">
@@ -121,42 +87,40 @@ function ActiveWorkoutSession({ id }: { id: string }) {
         onToggleManage={() => setIsManaging((value) => !value)}
       />
 
-      {error && (
-        <div className="mb-4 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-500">
-          {error}
-        </div>
-      )}
-
       <ExerciseList
-        workout={activeWorkout}
+        exercises={exercises}
         canAddSet={permissions.canAddSet}
         isManaging={isManaging}
-        busyExerciseId={busyExerciseId}
-        onMoveExercise={handleMoveExercise}
+        onMoveExercise={moveExercise}
         onRemoveExercise={setPendingExerciseRemoval}
       />
 
-      <ActiveWorkoutControls onExerciseAdded={handleExerciseAdded} />
+      <ActiveWorkoutControls onExerciseAdded={addExercise} />
 
       <ConfirmDialog
         open={pendingExerciseRemoval !== null}
         title="Удалить упражнение?"
         description={
           pendingExerciseRemoval
-            ? `Упражнение "${pendingExerciseRemoval.exercise?.name ?? 'Без названия'}" будет удалено вместе со всеми подходами в этой тренировке.`
+            ? `Упражнение "${pendingExerciseRemoval.name}" будет удалено вместе со всеми подходами в этой тренировке.`
             : ''
         }
         confirmLabel="Удалить"
         cancelLabel="Отмена"
         confirmTone="danger"
         onCancel={() => setPendingExerciseRemoval(null)}
-        onConfirm={handleRemoveExercise}
+        onConfirm={() => {
+          if (!pendingExerciseRemoval) {
+            return;
+          }
+
+          removeExercise(pendingExerciseRemoval.localId);
+          setPendingExerciseRemoval(null);
+        }}
       />
     </div>
   );
 }
-
-// ─── History mode sub-view ───────────────────────────────────────────────────
 
 function HistoryWorkoutSession({ id }: { id: string }) {
   const navigate = useNavigate();
@@ -179,34 +143,30 @@ function HistoryWorkoutSession({ id }: { id: string }) {
         onBack={() => navigate('/', { replace: true })}
       />
 
-      <ExerciseList workout={workout} canAddSet={permissions.canAddSet} />
+      <HistoryExerciseList workout={workout} canAddSet={permissions.canAddSet} />
     </div>
   );
 }
 
-// ─── Shared presentational components ───────────────────────────────────────
-
 function ExerciseList({
-  workout,
+  exercises,
   canAddSet,
   isManaging = false,
-  busyExerciseId = null,
   onMoveExercise,
   onRemoveExercise,
 }: {
-  workout: WorkoutReadWithDetails;
+  exercises: WorkoutSessionExercise[];
   canAddSet: boolean;
   isManaging?: boolean;
-  busyExerciseId?: string | null;
-  onMoveExercise?: (workoutExerciseId: string, direction: 'up' | 'down') => Promise<void>;
-  onRemoveExercise?: (workoutExercise: WorkoutExerciseRead) => void;
+  onMoveExercise: (exerciseLocalId: string, direction: 'up' | 'down') => void;
+  onRemoveExercise: (exercise: WorkoutSessionExercise) => void;
 }) {
-  if (workout.workout_exercises.length === 0) {
+  if (exercises.length === 0) {
     return (
       <div className="mb-4 rounded-2xl border border-dashed border-tg-theme-hint-color/30 bg-tg-theme-secondary-bg-color/50 px-5 py-8 text-center">
         <p className="text-base font-semibold mb-2">Тренировка пока пустая</p>
         <p className="text-tg-theme-hint-color text-sm">
-          Добавьте первое упражнение. Если завершить такую тренировку сейчас, она будет удалена.
+          Добавьте первое упражнение. Если выйти сейчас, черновик не сохранится.
         </p>
       </div>
     );
@@ -216,21 +176,48 @@ function ExerciseList({
     <>
       {isManaging && (
         <div className="mb-3 rounded-xl bg-tg-theme-secondary-bg-color/70 px-4 py-3 text-sm text-tg-theme-hint-color">
-          Перемещайте упражнения кнопками вверх и вниз. Удаление доступно только через подтверждение.
+          Перемещайте упражнения кнопками вверх и вниз. Удаление требует подтверждения.
         </div>
       )}
-      {workout.workout_exercises.map((we, index) => (
+      {exercises.map((exercise, index) => (
         <ExerciseCard
-          key={we.id}
-          workoutExercise={we}
+          key={exercise.localId}
+          workoutExercise={exercise}
           canAddSet={canAddSet}
           isManaging={isManaging}
           canMoveUp={index > 0}
-          canMoveDown={index < workout.workout_exercises.length - 1}
-          onMoveUp={onMoveExercise ? () => onMoveExercise(we.id, 'up') : undefined}
-          onMoveDown={onMoveExercise ? () => onMoveExercise(we.id, 'down') : undefined}
-          onRemove={onRemoveExercise ? () => onRemoveExercise(we) : undefined}
-          isBusy={busyExerciseId === we.id}
+          canMoveDown={index < exercises.length - 1}
+          onMoveUp={() => onMoveExercise(exercise.localId, 'up')}
+          onMoveDown={() => onMoveExercise(exercise.localId, 'down')}
+          onRemove={() => onRemoveExercise(exercise)}
+        />
+      ))}
+    </>
+  );
+}
+
+function HistoryExerciseList({
+  workout,
+  canAddSet,
+}: {
+  workout: WorkoutReadWithDetails;
+  canAddSet: boolean;
+}) {
+  if (workout.workout_exercises.length === 0) {
+    return (
+      <div className="mb-4 rounded-2xl border border-dashed border-tg-theme-hint-color/30 bg-tg-theme-secondary-bg-color/50 px-5 py-8 text-center">
+        <p className="text-base font-semibold mb-2">Тренировка была пустой</p>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      {workout.workout_exercises.map((exercise) => (
+        <ExerciseCard
+          key={exercise.id}
+          workoutExercise={exercise}
+          canAddSet={canAddSet}
         />
       ))}
     </>
@@ -277,7 +264,7 @@ function ConfirmDialog({
   cancelLabel: string;
   confirmTone: 'danger' | 'primary';
   onCancel: () => void;
-  onConfirm: () => void | Promise<void>;
+  onConfirm: () => void;
 }) {
   if (!open) return null;
 
@@ -294,7 +281,7 @@ function ConfirmDialog({
             {cancelLabel}
           </button>
           <button
-            onClick={() => void onConfirm()}
+            onClick={onConfirm}
             className={`flex-1 rounded-xl px-4 py-3 text-sm font-semibold ${
               confirmTone === 'danger'
                 ? 'bg-red-500 text-white'
@@ -309,17 +296,15 @@ function ConfirmDialog({
   );
 }
 
-// ─── Entry point — routes to correct sub-view by mode ───────────────────────
-
 export default function WorkoutSession({ mode }: WorkoutSessionProps) {
   const { id } = useParams<{ id: string }>();
 
-  if (!id) {
-    return <WorkoutSessionError message="Неверный URL тренировки" />;
-  }
-
   if (mode === 'active') {
     return <ActiveWorkoutSession id={id} />;
+  }
+
+  if (!id) {
+    return <WorkoutSessionError message="Неверный URL тренировки" />;
   }
 
   return <HistoryWorkoutSession id={id} />;
