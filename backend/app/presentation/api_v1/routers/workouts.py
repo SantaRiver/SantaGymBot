@@ -9,7 +9,8 @@ from app.presentation.api_v1.deps.deps import get_current_user
 from app.application.services.workout_service import workout_service
 from app.domain.schemas.workout import (
     WorkoutRead, WorkoutReadWithDetails, WorkoutCreate, WorkoutUpdate,
-    WorkoutExerciseCreate, WorkoutExerciseRead, WorkoutExerciseReorderRequest, WorkoutSetCreate, WorkoutSetRead
+    WorkoutExerciseCreate, WorkoutExerciseRead, WorkoutExerciseReorderRequest, WorkoutSetCreate, WorkoutSetRead,
+    WorkoutSetUpdate
 )
 
 router = APIRouter()
@@ -102,3 +103,13 @@ async def log_workout_set(
     # Force injection for safety
     data.workout_exercise_id = workout_exercise_id
     return await workout_service.add_set_to_exercise(session, current_user.id, workout_exercise_id, data)
+
+@router.patch("/sets/{workout_set_id}", response_model=WorkoutSetRead)
+async def update_workout_set(
+    workout_set_id: UUID,
+    data: WorkoutSetUpdate,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_async_session)
+):
+    """Обновить существующий подход"""
+    return await workout_service.update_set(session, current_user.id, workout_set_id, data)

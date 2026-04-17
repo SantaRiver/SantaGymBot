@@ -105,4 +105,12 @@ export const workoutsApi = {
     const res = await apiClient.post(`/workouts/exercises/${workoutExerciseId}/sets`, data);
     return res.data;
   },
+
+  updateSet: async (
+    workoutSetId: string,
+    data: { reps?: number | null; weight?: number | null; duration_seconds?: number | null; rest_time_after_seconds?: number | null },
+  ): Promise<WorkoutSetRead> => {
+    const res = await apiClient.patch(`/workouts/sets/${workoutSetId}`, data);
+    return res.data;
+  },
 };

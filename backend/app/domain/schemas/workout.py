@@ -39,6 +39,9 @@ class WorkoutSetBase(BaseModel):
 class WorkoutSetCreate(WorkoutSetBase):
     workout_exercise_id: UUID
 
+class WorkoutSetUpdate(WorkoutSetBase):
+    pass
+
 class WorkoutSetRead(WorkoutSetBase):
     id: UUID
     workout_exercise_id: UUID
