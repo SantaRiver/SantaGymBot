@@ -5,6 +5,7 @@ import { useWorkoutStore } from '../store/workout';
 import { useHistoryStore } from '../store/history';
 import { Dumbbell, Calendar, Clock, ChevronRight } from 'lucide-react';
 import type { WorkoutReadWithDetails } from '../api/workouts';
+import { useWorkoutSession } from '../hooks/useWorkoutSession';
 
 function formatDate(isoString: string): string {
   return new Date(isoString).toLocaleDateString('ru-RU', {
@@ -68,7 +69,7 @@ function HistorySection() {
 
   useEffect(() => {
     fetchHistory();
-  }, []);
+  }, [fetchHistory]);
 
   if (isLoading) {
     return (
@@ -112,15 +113,24 @@ function HistorySection() {
 export default function Dashboard() {
   const { user, logout } = useAuthStore();
   const { startWorkout } = useWorkoutStore();
+  const { hasSession, status, isHydrated } = useWorkoutSession();
   const navigate = useNavigate();
   const [starting, setStarting] = useState(false);
+
+  useEffect(() => {
+    if (!isHydrated || !hasSession || status === 'finished') {
+      return;
+    }
+
+    navigate('/workout', { replace: true });
+  }, [hasSession, isHydrated, navigate, status]);
 
   const handleStart = async () => {
     setStarting(true);
     try {
-      const workoutId = await startWorkout();
-      navigate(`/workout/${workoutId}`);
-    } catch {
+      startWorkout();
+      navigate('/workout');
+    } finally {
       setStarting(false);
     }
   };

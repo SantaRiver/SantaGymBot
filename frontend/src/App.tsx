@@ -1,10 +1,12 @@
 import { useEffect } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { useAuthStore } from './store/auth'
+import { useWorkoutStore } from './store/workout'
 import { exercisesApi } from './api/exercises'
 import Dashboard from './pages/Dashboard'
 import WorkoutSession from './pages/WorkoutSession'
 import { Dumbbell } from 'lucide-react'
+import { ToastViewport } from './components/ToastViewport'
 
 const FullScreenLoader = () => (
   <div className="min-h-screen flex flex-col items-center justify-center bg-tg-theme-bg-color">
@@ -20,6 +22,7 @@ function RequireAuth({ children }: { children: JSX.Element }) {
 
 function App() {
   const { token, isLoading, authenticate, error } = useAuthStore();
+  const { isHydrated, processSyncQueue } = useWorkoutStore();
 
   useEffect(() => {
     if (!token) {
@@ -28,6 +31,14 @@ function App() {
       exercisesApi.seed().catch(() => {});
     }
   }, [token, authenticate]);
+
+  useEffect(() => {
+    if (!token || !isHydrated) {
+      return;
+    }
+
+    void processSyncQueue();
+  }, [token, isHydrated, processSyncQueue]);
 
   if (isLoading) {
     return <FullScreenLoader />;
@@ -50,8 +61,10 @@ function App() {
 
   return (
     <Router>
+      <ToastViewport />
       <Routes>
         <Route path="/" element={<RequireAuth><Dashboard /></RequireAuth>} />
+        <Route path="/workout" element={<RequireAuth><WorkoutSession mode="active" /></RequireAuth>} />
         <Route path="/workout/:id" element={<RequireAuth><WorkoutSession mode="active" /></RequireAuth>} />
         <Route path="/history/:id" element={<RequireAuth><WorkoutSession mode="history" /></RequireAuth>} />
       </Routes>
