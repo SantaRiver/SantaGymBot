@@ -1,8 +1,8 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import apiClient from '../api/client';
-import WebApp from '@twa-dev/sdk';
 import { getUserFacingErrorMessage, logDebugError } from '../utils/errors';
+import { getTelegramWebApp } from '../lib/telegramWebApp';
 
 interface User {
   id: string;
@@ -20,12 +20,6 @@ interface AuthState {
   logout: () => void;
 }
 
-type TelegramWindow = Window & {
-  Telegram?: {
-    WebApp?: typeof WebApp;
-  };
-};
-
 export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
@@ -36,13 +30,8 @@ export const useAuthStore = create<AuthState>()(
       authenticate: async () => {
         set({ isLoading: true, error: null });
         try {
-            // Надежный способ получить WebApp из глобального window, обходя баги минификации @twa-dev/sdk
-            const tWebApp = (window as TelegramWindow).Telegram?.WebApp || WebApp;
+            const tWebApp = getTelegramWebApp();
             const initData = tWebApp?.initData || "test_mode=123456789";
-
-            // Вызываем методы только если они существуют (опциональная цепочка)
-            tWebApp?.ready?.();
-            tWebApp?.expand?.();
 
           const response = await apiClient.post('/auth/telegram-auth', {
             initData: initData,

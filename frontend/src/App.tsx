@@ -9,11 +9,14 @@ import WorkoutSession from './pages/WorkoutSession'
 import { Dumbbell } from 'lucide-react'
 import { ToastViewport } from './components/ToastViewport'
 import { useWorkoutStoreHydration } from './hooks/useWorkoutStoreHydration'
+import { initializeTelegramWebApp } from './lib/telegramWebApp'
 
 const FullScreenLoader = () => (
-  <div className="min-h-screen flex flex-col items-center justify-center bg-tg-theme-bg-color">
-    <Dumbbell className="w-12 h-12 text-tg-theme-button-color animate-pulse mb-4" />
-    <div className="text-tg-theme-text-color font-medium">Загрузка дневника...</div>
+  <div className="app-shell">
+    <div className="app-screen app-screen-centered bg-tg-theme-bg-color">
+      <Dumbbell className="mb-4 w-12 h-12 text-tg-theme-button-color animate-pulse" />
+      <div className="font-medium text-tg-theme-text-color">Загрузка дневника...</div>
+    </div>
   </div>
 );
 
@@ -26,6 +29,10 @@ function App() {
   const { token, isLoading, authenticate, error } = useAuthStore();
   const processSyncQueue = useWorkoutStore((state) => state.processSyncQueue);
   const { isHydrated } = useWorkoutStoreHydration();
+
+  useEffect(() => {
+    initializeTelegramWebApp();
+  }, []);
 
   useEffect(() => {
     if (!token) {
@@ -49,31 +56,35 @@ function App() {
 
   if (error && !token) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-4 text-center">
-        <h2 className="text-xl font-bold text-red-500 mb-2">Ошибка авторизации</h2>
-        <p className="max-w-sm text-tg-theme-hint-color">
-          {error}
-        </p>
-        <button
-          onClick={() => authenticate()}
-          className="mt-6 rounded-lg bg-tg-theme-button-color px-4 py-2 text-tg-theme-button-text-color"
-        >
-          Попробовать снова
-        </button>
+      <div className="app-shell">
+        <div className="app-screen app-screen-centered">
+          <h2 className="mb-2 text-xl font-bold text-red-500">Ошибка авторизации</h2>
+          <p className="max-w-sm text-tg-theme-hint-color">
+            {error}
+          </p>
+          <button
+            onClick={() => authenticate()}
+            className="mt-6 rounded-lg bg-tg-theme-button-color px-4 py-2 text-tg-theme-button-text-color"
+          >
+            Попробовать снова
+          </button>
+        </div>
       </div>
     );
   }
 
   return (
     <Router>
-      <ToastViewport />
-      <Routes>
-        <Route path="/" element={<RequireAuth><Dashboard /></RequireAuth>} />
-        <Route path="/settings" element={<RequireAuth><SettingsPage /></RequireAuth>} />
-        <Route path="/workout" element={<RequireAuth><WorkoutSession mode="active" /></RequireAuth>} />
-        <Route path="/workout/:id" element={<RequireAuth><WorkoutSession mode="active" /></RequireAuth>} />
-        <Route path="/history/:id" element={<RequireAuth><WorkoutSession mode="history" /></RequireAuth>} />
-      </Routes>
+      <div className="app-shell">
+        <ToastViewport />
+        <Routes>
+          <Route path="/" element={<RequireAuth><Dashboard /></RequireAuth>} />
+          <Route path="/settings" element={<RequireAuth><SettingsPage /></RequireAuth>} />
+          <Route path="/workout" element={<RequireAuth><WorkoutSession mode="active" /></RequireAuth>} />
+          <Route path="/workout/:id" element={<RequireAuth><WorkoutSession mode="active" /></RequireAuth>} />
+          <Route path="/history/:id" element={<RequireAuth><WorkoutSession mode="history" /></RequireAuth>} />
+        </Routes>
+      </div>
     </Router>
   );
 }
