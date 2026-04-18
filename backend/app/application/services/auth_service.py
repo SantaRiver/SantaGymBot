@@ -3,6 +3,7 @@ import hmac
 import hashlib
 from urllib.parse import parse_qsl
 from datetime import datetime, timedelta
+
 import jwt
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -10,7 +11,7 @@ from app.core.config import settings
 from app.infrastructure.database.repositories.user import user_repo
 
 class AuthService:
-    def __init__(self, bot_token: str, jwt_secret: str):
+    def __init__(self, bot_token: str | None, jwt_secret: str):
         self.bot_token = bot_token
         self.jwt_secret = jwt_secret
 
@@ -19,6 +20,9 @@ class AuthService:
         Провалидировать initData от Telegram WebApp.
         Возвращает распаршенный JSON пользователя или кидает ValueError.
         """
+        if not self.bot_token:
+            raise ValueError("BOT_TOKEN is not configured")
+
         parsed_data = dict(parse_qsl(init_data))
         if "hash" not in parsed_data:
             raise ValueError("No hash in init_data")

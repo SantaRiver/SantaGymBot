@@ -30,11 +30,11 @@ export const useAuthStore = create<AuthState>()(
       authenticate: async () => {
         set({ isLoading: true, error: null });
         try {
-            const tWebApp = getTelegramWebApp();
-            const initData = tWebApp?.initData || "test_mode=123456789";
+          const tWebApp = getTelegramWebApp();
+          const initData = tWebApp?.initData || "test_mode=123456789";
 
           const response = await apiClient.post('/auth/telegram-auth', {
-            initData: initData,
+            initData,
           });
 
           set({
