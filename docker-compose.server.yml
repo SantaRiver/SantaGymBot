@@ -1,6 +1,8 @@
 services:
   traefik:
     image: traefik:v3.6
+    profiles:
+      - edge
     environment:
       DOCKER_API_VERSION: "1.41"
     command:
@@ -25,27 +27,23 @@ services:
       - proxy_network
 
   backend:
-    ports:
-      - "8000:8000"
     restart: unless-stopped
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.backend.rule=Host(`${API_HOST:-api.gym.example.com}`)"
-      - "traefik.http.routers.backend.entrypoints=websecure"
-      - "traefik.http.routers.backend.tls.certresolver=myresolver"
-      - "traefik.http.services.backend.loadbalancer.server.port=8000"
+      - "traefik.http.routers.${TRAEFIK_ROUTER_PREFIX:-santagym}-backend.rule=Host(`${API_HOST:-api.gym.example.com}`)"
+      - "traefik.http.routers.${TRAEFIK_ROUTER_PREFIX:-santagym}-backend.entrypoints=websecure"
+      - "traefik.http.routers.${TRAEFIK_ROUTER_PREFIX:-santagym}-backend.tls.certresolver=myresolver"
+      - "traefik.http.services.${TRAEFIK_ROUTER_PREFIX:-santagym}-backend.loadbalancer.server.port=8000"
       - "traefik.docker.network=proxy_network"
 
   bot:
     restart: unless-stopped
 
   frontend:
-    ports:
-      - "3000:80"
     restart: unless-stopped
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.frontend.rule=Host(`${FRONTEND_HOST:-gym.example.com}`)"
-      - "traefik.http.routers.frontend.entrypoints=websecure"
-      - "traefik.http.routers.frontend.tls.certresolver=myresolver"
-      - "traefik.http.services.frontend.loadbalancer.server.port=80"
+      - "traefik.http.routers.${TRAEFIK_ROUTER_PREFIX:-santagym}-frontend.rule=Host(`${FRONTEND_HOST:-gym.example.com}`)"
+      - "traefik.http.routers.${TRAEFIK_ROUTER_PREFIX:-santagym}-frontend.entrypoints=websecure"
+      - "traefik.http.routers.${TRAEFIK_ROUTER_PREFIX:-santagym}-frontend.tls.certresolver=myresolver"
+      - "traefik.http.services.${TRAEFIK_ROUTER_PREFIX:-santagym}-frontend.loadbalancer.server.port=80"

@@ -21,6 +21,7 @@ Icon
 .env
 .env.production
 .env.local
+.env.dev
 .env.server
 *.pem
 *.key
