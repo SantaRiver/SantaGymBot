@@ -13,7 +13,7 @@ export function RestTimer({ seconds, onSkip }: RestTimerProps) {
   return (
     <div
       className="fixed left-4 right-4 z-20 flex items-center justify-between rounded-2xl bg-tg-theme-secondary-bg-color p-4 shadow-lg"
-      style={{ bottom: 'calc(6.5rem + env(safe-area-inset-bottom, 0px))' }}
+      style={{ bottom: 'calc(6.5rem + var(--app-safe-bottom))' }}
     >
       <div>
         <p className="text-xs text-tg-theme-hint-color mb-1">Отдых</p>

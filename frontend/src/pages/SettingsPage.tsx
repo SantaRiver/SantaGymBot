@@ -15,8 +15,8 @@ export default function SettingsPage() {
   const timerDescriptionId = 'rest-timer-description';
 
   return (
-    <div className="p-4 max-w-md mx-auto min-h-screen">
-      <header className="flex items-center justify-between gap-3 mb-6 pt-4">
+    <div className="app-screen">
+      <header className="mb-6 flex items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold">Настройки</h1>
           <p className="text-sm text-tg-theme-hint-color">Таймер отдыха</p>

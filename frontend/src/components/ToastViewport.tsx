@@ -9,7 +9,8 @@ export function ToastViewport() {
 
   return (
     <div
-      className="pointer-events-none fixed inset-x-4 top-4 z-50 mx-auto flex max-w-md flex-col gap-2"
+      className="pointer-events-none fixed inset-x-4 z-50 mx-auto flex max-w-md flex-col gap-2"
+      style={{ top: 'calc(var(--app-safe-top) + 1rem)' }}
       aria-live="polite"
       aria-atomic="true"
     >

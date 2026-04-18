@@ -1,6 +1,8 @@
 import logging
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.config import settings
 from app.infrastructure.database.database import get_async_session
 from app.domain.schemas.auth import InitDataRequest, AuthResponse, UserRead
 from app.application.services.auth_service import auth_service
@@ -17,6 +19,8 @@ async def telegram_auth(request: InitDataRequest, session: AsyncSession = Depend
     logger.critical(f"Raw initData: {request.initData}")
     try:
         if request.initData.startswith("test_mode="):
+            if not settings.ALLOW_TEST_AUTH:
+                raise ValueError("Test auth is disabled")
             tg_id = int(request.initData.split("test_mode=")[1])
             user = await auth_service._get_or_create_test_user(session, tg_id)
             token = auth_service.create_access_token(tg_id=tg_id, user_id=str(user.id))

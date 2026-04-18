@@ -34,8 +34,8 @@ const FOCUSABLE_SELECTOR = [
 
 const variantClasses: Record<DialogVariant, string> = {
   sheet:
-    'mt-auto w-full max-w-md rounded-t-3xl bg-tg-theme-bg-color px-4 pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))] pt-4 shadow-2xl',
-  fullscreen: 'flex h-full w-full flex-col bg-tg-theme-bg-color',
+    'mt-auto w-full max-w-md rounded-t-3xl bg-tg-theme-bg-color px-4 pb-[calc(1.5rem+var(--app-safe-bottom))] pt-4 shadow-2xl',
+  fullscreen: 'flex h-full min-h-0 w-full flex-col overflow-hidden bg-tg-theme-bg-color',
 };
 
 export function Dialog({
@@ -131,6 +131,15 @@ export function Dialog({
     return null;
   }
 
+  const overlayStyle = variant === 'fullscreen'
+    ? {
+        paddingTop: 'var(--app-safe-top)',
+        paddingRight: 'var(--app-safe-right)',
+        paddingBottom: 'var(--app-safe-bottom)',
+        paddingLeft: 'var(--app-safe-left)',
+      }
+    : undefined;
+
   const handleOverlayClick = (event: MouseEvent<HTMLDivElement>) => {
     if (event.target === event.currentTarget) {
       onClose();
@@ -140,6 +149,7 @@ export function Dialog({
   return (
     <div
       className={`fixed inset-0 z-40 flex bg-black/45 ${variant === 'fullscreen' ? '' : 'items-end'}`}
+      style={overlayStyle}
       onMouseDown={handleOverlayClick}
     >
       <div

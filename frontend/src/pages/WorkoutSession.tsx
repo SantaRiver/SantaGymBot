@@ -76,7 +76,7 @@ function ActiveWorkoutSession({ id }: { id?: string }) {
   }
 
   return (
-    <div className="p-4 max-w-md mx-auto min-h-screen pb-6">
+    <div className="app-screen pb-6">
       <WorkoutHeader
         mode="active"
         elapsedSeconds={elapsedSeconds}
@@ -139,7 +139,7 @@ function HistoryWorkoutSession({ id }: { id: string }) {
   }
 
   return (
-    <div className="p-4 max-w-md mx-auto min-h-screen pb-32">
+    <div className="app-screen pb-32">
       <WorkoutHeader
         mode="history"
         workout={workout}
@@ -229,7 +229,7 @@ function HistoryExerciseList({
 
 function WorkoutSessionLoader() {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center gap-3 px-4 text-center">
+    <div className="app-screen app-screen-centered gap-3">
       <p className="text-base font-semibold">Загружаем тренировку</p>
       <p className="text-sm text-tg-theme-hint-color">
         Подождите немного, мы восстанавливаем упражнения и подходы.
@@ -241,7 +241,7 @@ function WorkoutSessionLoader() {
 function WorkoutSessionError({ message }: { message: string }) {
   const navigate = useNavigate();
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4 text-center gap-4">
+    <div className="app-screen app-screen-centered gap-4">
       <p className="text-red-500 font-medium">{message}</p>
       <button
         onClick={() => navigate('/', { replace: true })}

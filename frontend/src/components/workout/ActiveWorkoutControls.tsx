@@ -34,7 +34,7 @@ export function ActiveWorkoutControls({
 
       {!isManaging && (
         <div
-          className="sticky bottom-0 z-10 mt-4 bg-gradient-to-t from-tg-theme-bg-color from-70% to-transparent pt-6 pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))]"
+          className="sticky bottom-0 z-10 mt-4 bg-gradient-to-t from-tg-theme-bg-color from-70% to-transparent pt-6 pb-[calc(1.5rem+var(--app-safe-bottom))]"
         >
           <button
             onClick={() => setShowCatalog(true)}

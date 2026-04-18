@@ -14,21 +14,32 @@ from app.core.config import settings
 logging.basicConfig(level=logging.INFO, stream=sys.stdout)
 logger = logging.getLogger(__name__)
 
-# Инициализация бота и диспетчера
-bot = Bot(token=settings.BOT_TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
 dp = Dispatcher()
+
+
+def get_bot() -> Bot:
+    if not settings.BOT_TOKEN:
+        raise RuntimeError("BOT_TOKEN is required to run the bot service")
+
+    return Bot(
+        token=settings.BOT_TOKEN,
+        default=DefaultBotProperties(parse_mode=ParseMode.HTML),
+    )
+
+
+def get_web_app_url() -> str:
+    if not settings.WEBAPP_BASE_URL:
+        raise RuntimeError("WEBAPP_BASE_URL is required to run the bot service")
+
+    return settings.WEBAPP_BASE_URL
 
 @dp.message(CommandStart())
 async def cmd_start_handler(message: types.Message):
     """
     Хендлер команды /start. Приветствует пользователя и выдает кнопку для открытия WebApp.
     """
-    # В проде будет реальный URL, на который Traefik смаршрутизирует фронтенд.
-    # Пока выведем заглушку
-    web_app_url = "https://gym.santariver.lol" # TODO: Заменить на урл нашего фронта позже
-
     kb = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="🏋️‍♂️ Открыть дневник тренировок", web_app=WebAppInfo(url=web_app_url))]
+        [InlineKeyboardButton(text="🏋️‍♂️ Открыть дневник тренировок", web_app=WebAppInfo(url=get_web_app_url()))]
     ])
 
     welcome_text = (
@@ -41,6 +52,7 @@ async def cmd_start_handler(message: types.Message):
 async def start_polling():
     """Запуск бота в режиме long polling. В будущем можно переделать на webhooks."""
     logger.info("Starting bot (polling mode)...")
+    bot = get_bot()
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
