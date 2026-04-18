@@ -60,89 +60,104 @@ SantaGymBot/
 
 ---
 
-## 🚀 Локальная разработка
+## 🚀 Local Development
 
 ### Требования
 * Docker & Docker Compose
-* Node.js (v20+)
-* Python 3.12+ / Poetry (Опционально, если запускать бэк без докера)
+* GNU Make
+* Node.js / Python локально не обязательны, если используете только Docker
 
 ### 1. Подготовка окружения
-Клонируйте репозиторий и создайте файл секретов окружения:
+Клонируйте репозиторий и создайте local env:
 ```bash
 git clone <repository_url>
 cd SantaGymBot
-cp .env.example .env
+cp .env.local.example .env.local
 ```
 
-Отредактируйте `.env`:
-* Обязательно укажите `BOT_TOKEN` (получив его у @BotFather в Telegram).
-* Сгенерируйте `JWT_SECRET` (любая длинная случайная строка).
-
-### 2. Запуск Backend + Инфраструктура
-Мы используем Docker для поднятия Базы данных (PostgreSQL), Кэша (Redis) и самого Бэкенда (API + Bot).
+### 2. Первый запуск
 
 ```bash
-docker compose up -d --build
+make local-init
+make local-up
 ```
-> **Внимание:** В локальном режиме бэкенд будет доступен Траефиком по хосту `api.santagym.local` (если прописать его в `/etc/hosts` локальной машины), либо можно маппить порты `8000:8000` напрямую для тестов.
 
-### 3. Накатываем миграции Базы Данных
-Чтобы в БД появились таблицы, необходимо применить миграции Alembic:
+Локальный стенд поднимает:
+- `db`
+- `redis`
+- `backend`
+- `frontend`
+
+`bot` в обычный local workflow не входит.
+
+### 3. Адреса сервисов
+
+- API: `http://localhost:8000`
+- Frontend: `http://localhost:5173`
+
+### 4. Миграции
 
 ```bash
-docker compose exec backend alembic upgrade head
+make local-migrate
 ```
 
-*(Если вы модифицировали модели и нужно создать новую миграцию):*
-```bash
-docker compose exec backend alembic revision --autogenerate -m "reason"
-docker compose exec backend alembic upgrade head
-```
-
-### 4. Запуск Frontend
-В отдельном окне терминала перейдите в папку `frontend`:
+### 5. Логи и остановка
 
 ```bash
-cd frontend
-npm install
-npm run dev
+make local-logs
+make local-down
 ```
-Фронтенд запустится на `http://localhost:5173`.
-> **Для справки:** При тестировании фронта локально (в браузере, а не внутри Telegram), инициализация будет проходить через заглушку (bypass auth), создавая "тестового пользователя", чтобы вы могли разрабатывать UI без подключения дебаггера смартфона.
+
+### 6. Local Auth
+
+Локальная разработка использует controlled fallback auth через `test_mode`, если в `.env.local` включен `ALLOW_TEST_AUTH=true`.
+
+Это подходит для:
+- UI разработки
+- локальной проверки API
+- быстрой отладки в браузере
+
+Это не заменяет реальную проверку Telegram WebApp авторизации.
+
+Детали: [local-stand.md](/Users/santa/PycharmProjects/SantaGymBot/docs/ops/local-stand.md:1)
 
 ---
 
-## 🌍 Production Деплой (Развертывание на сервер)
+## 🌍 Server Deployment
 
-Проект спроектирован так, чтобы его можно было безболезненно развернуть на VPS (Ubuntu/Debian) без лишних конфликтов портов благодаря использованию сетки Traefik.
+Серверный режим использует отдельный compose override с `Traefik`, `bot` и production-oriented frontend runtime.
 
-### 1. Настройка домена
-Направьте A-запись вашего домена (например, `gymbot.example.com` и `api.gymbot.example.com`) на IP вашего сервера.
+### 1. Подготовка env
 
-### 2. Подготовка .env для PROD
-В файле `.env` на сервере:
-```dotenv
-WEBHOOK_URL=https://api.gymbot.example.com/api/v1/webhook
-JWT_SECRET=super_strong_production_key...
-POSTGRES_PASSWORD=super_strong_password
-...
-```
-
-### 3. Изменение Traefik-конфигурации (docker-compose)
-В prod-окружении необходимо:
-1. Заменить `--api.insecure=true` на SSL/Let's Encrypt Entrypoints в настройках `traefik`.
-2. Добавить метки (labels) для `frontend` контейнера (напишите prod-dockerfile, который собирает статику и отдает через `nginx`). Либо отдавать статику через CDN.
-3. Обновить label хоста бэкенда:
-   ```yaml
-   - "traefik.http.routers.backend.rule=Host(`api.gymbot.example.com`)"
-   ```
-
-### 4. Запуск и миграция
 ```bash
-docker compose up -d --build
-docker compose exec backend alembic upgrade head
+cp .env.server.example .env.server
 ```
+
+Заполните как минимум:
+- `BOT_TOKEN`
+- `JWT_SECRET`
+- `WEBAPP_BASE_URL`
+- `WEBHOOK_URL`
+- `FRONTEND_HOST`
+- `API_HOST`
+- `TRAEFIK_ACME_EMAIL`
+
+### 2. Проверка server topology
+
+```dotenv
+make server-config
+```
+
+### 3. Запуск server stack
+
+```bash
+docker compose --env-file .env.server -f docker-compose.yml -f docker-compose.server.yml up -d --build
+docker compose --env-file .env.server -f docker-compose.yml -f docker-compose.server.yml exec backend alembic upgrade head
+```
+
+`Traefik` здесь нужен для host-based routing и размещения нескольких ботов/WebApp на одном сервере без конфликта внешних портов `80/443`.
+
+Детали: [server-stand.md](/Users/santa/PycharmProjects/SantaGymBot/docs/ops/server-stand.md:1)
 
 ---
 
@@ -163,7 +178,7 @@ docker compose exec backend alembic upgrade head
 
 ## Deployment (GitHub Actions)
 
-This project has CI/CD configured using GitHub Actions. Upon pushing to the `main` branch, the code is copied via SCP and started using docker-compose on the target server.
+This project has CI/CD configured using GitHub Actions. The pipeline validates frontend, backend and compose configuration. Deployment uses the server compose topology.
 
 ### Setup Server Secrets
 Navigate to **Settings > Secrets and variables > Actions** in your GitHub repository and add:
@@ -172,13 +187,13 @@ Navigate to **Settings > Secrets and variables > Actions** in your GitHub reposi
 - `SSH_KEY`: The private Ed25519 or RSA SSH key to access the VPS
 
 ### Initial Server Setup
-Make sure the folder exists and create a `.env` file containing the protected API tokens:
+Make sure the folder exists and create a `.env.server` file containing the protected runtime secrets:
 ```bash
 # Connect to your server
 ssh root@YOUR_SERVER_IP
 mkdir -p /opt/santagym
 cd /opt/santagym
-nano .env
+nano .env.server
 ```
 
-Fill the `.env` with your variables (`BOT_TOKEN`, `POSTGRES_USER`, etc).
+Fill `.env.server` with your variables (`BOT_TOKEN`, `POSTGRES_USER`, `WEBAPP_BASE_URL`, etc).
