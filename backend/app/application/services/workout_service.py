@@ -1,10 +1,12 @@
 from uuid import UUID
-from typing import List, Optional
+from typing import List
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import HTTPException
 
+from app.application.services.workout_stats import build_stats_payload, calculate_period_bounds
 from app.domain.schemas.workout import (
     WorkoutCreate,
+    WorkoutStatsRead,
     WorkoutUpdate,
     WorkoutExerciseCreate,
     WorkoutExerciseReorderRequest,
@@ -26,6 +28,26 @@ class WorkoutService:
     @staticmethod
     async def get_workouts(session: AsyncSession, user_id: UUID, skip: int = 0, limit: int = 100) -> List[Workout]:
         return await workout_repo.get_user_workouts(session, user_id, skip, limit)
+
+    @staticmethod
+    async def get_stats(
+        session: AsyncSession,
+        *,
+        user_id: UUID,
+        timezone_name: str,
+        period: str,
+    ) -> WorkoutStatsRead:
+        try:
+            start_at, end_at = calculate_period_bounds(period, timezone_name)
+        except ValueError as error:
+            raise HTTPException(status_code=400, detail=str(error)) from error
+        workouts = await workout_repo.get_completed_workouts_in_range(
+            session,
+            user_id=user_id,
+            start_at=start_at,
+            end_at=end_at,
+        )
+        return WorkoutStatsRead(**build_stats_payload(period, timezone_name, workouts))
 
     @staticmethod
     async def get_workout_details(session: AsyncSession, user_id: UUID, workout_id: UUID) -> Workout:

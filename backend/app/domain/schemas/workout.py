@@ -107,3 +107,32 @@ class WorkoutRead(WorkoutBase):
 
 class WorkoutReadWithDetails(WorkoutRead):
     workout_exercises: List[WorkoutExerciseRead] = []
+
+
+class WorkoutStatsSummaryRead(BaseModel):
+    training_days: int
+    completed_workouts: int
+    total_sets: int
+    total_duration_minutes: int
+
+
+class WorkoutStatsWeekRead(BaseModel):
+    week_start: datetime
+    training_days: int
+    completed_workouts: int
+
+
+class WorkoutStatsTopExerciseRead(BaseModel):
+    exercise_id: UUID
+    name: str
+    workout_count: int
+    set_count: int
+    last_used_at: Optional[datetime] = None
+
+
+class WorkoutStatsRead(BaseModel):
+    period: str = Field(..., max_length=20)
+    summary: WorkoutStatsSummaryRead
+    activity_by_week: List[WorkoutStatsWeekRead]
+    top_exercises: List[WorkoutStatsTopExerciseRead]
+    generated_at: datetime

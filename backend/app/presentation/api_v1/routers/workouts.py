@@ -8,7 +8,7 @@ from app.infrastructure.database.models import User
 from app.presentation.api_v1.deps.deps import get_current_user
 from app.application.services.workout_service import workout_service
 from app.domain.schemas.workout import (
-    WorkoutRead, WorkoutReadWithDetails, WorkoutCreate, WorkoutUpdate,
+    WorkoutRead, WorkoutReadWithDetails, WorkoutCreate, WorkoutStatsRead, WorkoutUpdate,
     WorkoutExerciseCreate, WorkoutExerciseRead, WorkoutExerciseReorderRequest, WorkoutSetCreate, WorkoutSetRead,
     WorkoutSetUpdate
 )
@@ -24,6 +24,21 @@ async def get_my_workouts(
 ):
     """Список тренировок пользователя со всеми загруженными упражнениями и сетами"""
     return await workout_service.get_workouts(session, current_user.id, skip, limit)
+
+
+@router.get("/stats", response_model=WorkoutStatsRead)
+async def get_workout_stats(
+    period: str = "month",
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_async_session),
+):
+    """Агрегированная статистика завершенных тренировок"""
+    return await workout_service.get_stats(
+        session,
+        user_id=current_user.id,
+        timezone_name=current_user.timezone,
+        period=period,
+    )
 
 @router.post("/", response_model=WorkoutRead, status_code=status.HTTP_201_CREATED)
 async def create_workout(
