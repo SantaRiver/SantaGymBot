@@ -1,5 +1,6 @@
 LOCAL_COMPOSE=docker compose --env-file .env.local -f docker-compose.yml -f docker-compose.local.yml
 SERVER_COMPOSE=docker compose --env-file .env.server -f docker-compose.yml -f docker-compose.server.yml
+DEV_SERVER_COMPOSE=docker compose --env-file .env.dev -f docker-compose.yml -f docker-compose.server.yml
 
 local-up:
 	$(LOCAL_COMPOSE) up --build -d db redis backend frontend
@@ -19,3 +20,6 @@ local-init:
 
 server-config:
 	$(SERVER_COMPOSE) config
+
+dev-server-config:
+	$(DEV_SERVER_COMPOSE) config

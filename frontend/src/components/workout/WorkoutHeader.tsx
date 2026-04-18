@@ -1,26 +1,12 @@
 import { ArrowLeft, Grip, StopCircle, Timer } from 'lucide-react';
 import type { WorkoutReadWithDetails } from '../../api/workouts';
+import { useAuthStore } from '../../store/auth';
+import { formatDuration, formatWorkoutDateWithYear } from '../../utils/formatting';
 
 function formatTime(seconds: number): string {
   const m = Math.floor(seconds / 60).toString().padStart(2, '0');
   const s = (seconds % 60).toString().padStart(2, '0');
   return `${m}:${s}`;
-}
-
-function formatDate(isoString: string): string {
-  return new Date(isoString).toLocaleDateString('ru-RU', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  });
-}
-
-function formatDuration(startIso: string, endIso: string): string {
-  const diffSeconds = Math.round((new Date(endIso).getTime() - new Date(startIso).getTime()) / 1000);
-  const h = Math.floor(diffSeconds / 3600);
-  const m = Math.floor((diffSeconds % 3600) / 60);
-  if (h > 0) return `${h} ч ${m} мин`;
-  return `${m} мин`;
 }
 
 interface ActiveHeaderProps {
@@ -83,7 +69,8 @@ interface HistoryHeaderProps {
 }
 
 function HistoryHeader({ workout, onBack }: HistoryHeaderProps) {
-  const date = workout.start_time ? formatDate(workout.start_time) : 'Дата неизвестна';
+  const timezone = useAuthStore((state) => state.user?.timezone ?? 'UTC');
+  const date = workout.start_time ? formatWorkoutDateWithYear(workout.start_time, timezone) : 'Дата неизвестна';
   const duration =
     workout.start_time && workout.end_time
       ? formatDuration(workout.start_time, workout.end_time)

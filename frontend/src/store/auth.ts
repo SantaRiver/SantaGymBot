@@ -9,6 +9,7 @@ interface User {
   tg_id: number;
   username: string | null;
   language_code: string;
+  timezone: string;
 }
 
 interface AuthState {

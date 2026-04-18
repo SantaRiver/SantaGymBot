@@ -1,7 +1,8 @@
+from datetime import datetime
 from typing import List, Optional
 from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, text as sa_text
+from sqlalchemy import func, select, text as sa_text
 from sqlalchemy.orm import selectinload
 
 from app.infrastructure.database.models import Workout, Exercise, WorkoutExercise, WorkoutSet
@@ -37,6 +38,37 @@ class WorkoutRepository(BaseRepository[Workout]):
         )
         result = await session.execute(stmt)
         return result.scalar_one_or_none()
+
+    async def get_completed_workouts_in_range(
+        self,
+        session: AsyncSession,
+        *,
+        user_id: UUID,
+        start_at: Optional[datetime] = None,
+        end_at: Optional[datetime] = None,
+    ) -> List[Workout]:
+        effective_time = func.coalesce(Workout.start_time, Workout.created_at)
+        stmt = (
+            select(Workout)
+            .where(
+                Workout.user_id == user_id,
+                Workout.status == "completed",
+            )
+            .options(
+                selectinload(Workout.workout_exercises).selectinload(WorkoutExercise.exercise),
+                selectinload(Workout.workout_exercises).selectinload(WorkoutExercise.sets),
+            )
+            .order_by(effective_time.desc())
+        )
+
+        if start_at is not None:
+            stmt = stmt.where(effective_time >= start_at)
+
+        if end_at is not None:
+            stmt = stmt.where(effective_time < end_at)
+
+        result = await session.execute(stmt)
+        return list(result.scalars().all())
 
 class ExerciseRepository(BaseRepository[Exercise]):
     def __init__(self):

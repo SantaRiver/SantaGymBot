@@ -76,10 +76,62 @@ input:focus-visible,
   padding: 1rem;
 }
 
+.app-screen-with-tabbar {
+  padding-bottom: calc(6rem + var(--app-safe-bottom));
+}
+
 .app-screen-centered {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   text-align: center;
+}
+
+.root-tab-bar {
+  position: fixed;
+  right: var(--app-safe-right);
+  bottom: 0;
+  left: var(--app-safe-left);
+  z-index: 20;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  padding: 0.75rem 1rem calc(0.75rem + var(--app-safe-bottom));
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 0) 0%, var(--tg-theme-bg-color) 24%),
+    var(--tg-theme-bg-color);
+}
+
+.root-tab-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 1rem;
+  background-color: color-mix(in srgb, var(--tg-theme-secondary-bg-color) 84%, transparent);
+  color: var(--tg-theme-hint-color);
+  padding: 0.9rem 1rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition:
+    transform 160ms ease,
+    background-color 160ms ease,
+    color 160ms ease;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.root-tab-link:hover {
+  color: var(--tg-theme-text-color);
+}
+
+.root-tab-link:active {
+  transform: scale(0.98);
+}
+
+.root-tab-link-active {
+  background-color: var(--tg-theme-button-color);
+  color: var(--tg-theme-button-text-color);
 }
