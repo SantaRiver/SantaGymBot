@@ -159,6 +159,39 @@ docker compose --env-file .env.server -f docker-compose.yml -f docker-compose.se
 
 Детали: [server-stand.md](/Users/santa/PycharmProjects/SantaGymBot/docs/ops/server-stand.md:1)
 
+## 🧪 Dev Server Deployment
+
+Dev-стенд на сервере разворачивается как отдельный stack рядом с prod:
+- отдельная директория, например `/opt/santagym-dev`
+- отдельный env-файл `.env.dev`
+- отдельные Postgres/Redis volumes
+- отдельные домены, например `dev.gym.santariver.lol` и `dev-api.gym.santariver.lol`
+- тот же сервер и тот же `Traefik`, но другой compose project name
+
+### Подготовка env
+
+```bash
+cp .env.dev.example .env.dev
+```
+
+Заполните как минимум:
+- `BOT_TOKEN`
+- `JWT_SECRET`
+- `WEBAPP_BASE_URL`
+- `WEBHOOK_URL`
+- `FRONTEND_HOST`
+- `API_HOST`
+- `TRAEFIK_ACME_EMAIL`
+
+### Автодеплой
+
+После push/merge в `develop` workflow `Deploy Dev to VPS`:
+- копирует код в `/opt/santagym-dev`
+- использует `.env.dev`
+- запускает отдельный compose project `santagym-dev`
+- прогоняет миграции
+- проверяет health backend/frontend
+
 ---
 
 ## 🔒 Модель безопасности
