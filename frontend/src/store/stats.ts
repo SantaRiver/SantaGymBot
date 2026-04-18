@@ -12,6 +12,7 @@ interface StatsEntry {
 interface StatsState {
   statsByPeriod: Record<StatsPeriod, StatsEntry>;
   fetchStats: (period: StatsPeriod, options?: { force?: boolean }) => Promise<void>;
+  invalidateStats: (period?: StatsPeriod) => void;
 }
 
 const emptyEntry = (): StatsEntry => ({
@@ -71,5 +72,24 @@ export const useStatsStore = create<StatsState>((set, get) => ({
         },
       }));
     }
+  },
+
+  invalidateStats: (period) => {
+    if (!period) {
+      set({
+        statsByPeriod: {
+          month: emptyEntry(),
+          all: emptyEntry(),
+        },
+      });
+      return;
+    }
+
+    set((state) => ({
+      statsByPeriod: {
+        ...state.statsByPeriod,
+        [period]: emptyEntry(),
+      },
+    }));
   },
 }));

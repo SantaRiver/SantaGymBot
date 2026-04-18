@@ -4,6 +4,7 @@ import type { ExerciseRead } from '../api/workouts';
 import { workoutsApi } from '../api/workouts';
 import { useToastStore } from './toast';
 import { useSettingsStore } from './settings';
+import { useStatsStore } from './stats';
 import { getUserFacingErrorMessage, logDebugError } from '../utils/errors';
 import {
   createEmptyWorkoutSessionSnapshot,
@@ -328,6 +329,8 @@ const runQueueAction = async (action: SyncQueueAction): Promise<void> => {
       status: 'completed',
       end_time: action.finishedAt,
     });
+    useStatsStore.getState().invalidateStats();
+    void useStatsStore.getState().fetchStats('month', { force: true });
     useWorkoutStore.setState((current) => ({
       ...(current.workoutId === workoutId ? emptySnapshot : {}),
       error: null,
