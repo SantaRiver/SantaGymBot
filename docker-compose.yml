@@ -1,38 +1,6 @@
 services:
-  traefik:
-    image: traefik:v3.6
-    container_name: traefik
-    environment:
-      - DOCKER_API_VERSION=1.41
-    command:
-      - "--api.insecure=true"
-      - "--providers.docker=true"
-      - "--providers.docker.exposedbydefault=false"
-      - "--entrypoints.web.address=:80"
-      - "--entrypoints.websecure.address=:443"
-      - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
-      - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
-      - "--certificatesresolvers.myresolver.acme.httpchallenge=true"
-      - "--certificatesresolvers.myresolver.acme.httpchallenge.entrypoint=web"
-      - "--certificatesresolvers.myresolver.acme.email=admin@santariver.lol"
-      - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
-
-
-    ports:
-      - "80:80"
-      - "443:443"
-      - "8080:8080"
-    volumes:
-      - "/var/run/docker.sock:/var/run/docker.sock:ro"
-      - "letsencrypt:/letsencrypt"
-    networks:
-      - proxy_network
-
   db:
     image: postgres:16-alpine
-    container_name: santagym_db
-    ports:
-      - "127.0.0.1:5432:5432"
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-santa}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-santa_pass}
@@ -49,7 +17,6 @@ services:
 
   redis:
     image: redis:7-alpine
-    container_name: santagym_redis
     volumes:
       - redis_data:/data
     networks:
@@ -58,17 +25,16 @@ services:
   backend:
     build:
       context: ./backend
-    container_name: santagym_backend
-    ports:
-      - "8000:8000"
-    volumes:
-      - ./backend:/app
     environment:
-      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-santa}:${POSTGRES_PASSWORD:-santa_pass}@db:5432/${POSTGRES_DB:-santagym}
-      - REDIS_URL=redis://redis:6379/0
-      - BOT_TOKEN=${BOT_TOKEN}
-      - JWT_SECRET=${JWT_SECRET:-supersecret}
-      - WEBHOOK_URL=${WEBHOOK_URL:-https://api.gym.santariver.lol}
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-santa}:${POSTGRES_PASSWORD:-santa_pass}@db:5432/${POSTGRES_DB:-santagym}
+      REDIS_URL: redis://redis:6379/0
+      BOT_TOKEN: ${BOT_TOKEN:-}
+      JWT_SECRET: ${JWT_SECRET:-supersecret}
+      WEBHOOK_URL: ${WEBHOOK_URL:-}
+      WEBAPP_BASE_URL: ${WEBAPP_BASE_URL:-}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
+      ALLOW_TEST_AUTH: ${ALLOW_TEST_AUTH:-false}
+      DEBUG: ${DEBUG:-false}
     depends_on:
       db:
         condition: service_healthy
@@ -80,30 +46,23 @@ services:
       timeout: 5s
       retries: 5
       start_period: 20s
-    restart: unless-stopped
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.backend.rule=Host(`api.gym.santariver.lol`)"
-      - "traefik.http.routers.backend.entrypoints=websecure"
-      - "traefik.http.routers.backend.tls.certresolver=myresolver"
-      - "traefik.http.services.backend.loadbalancer.server.port=8000"
-      - "traefik.docker.network=proxy_network"
-
     networks:
-      - proxy_network
       - internal_network
+      - proxy_network
 
   bot:
     build:
       context: ./backend
-    container_name: santagym_bot
-    volumes:
-      - ./backend:/app
     environment:
-      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-santa}:${POSTGRES_PASSWORD:-santa_pass}@db:5432/${POSTGRES_DB:-santagym}
-      - REDIS_URL=redis://redis:6379/0
-      - BOT_TOKEN=${BOT_TOKEN}
-      - JWT_SECRET=${JWT_SECRET:-supersecret}
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-santa}:${POSTGRES_PASSWORD:-santa_pass}@db:5432/${POSTGRES_DB:-santagym}
+      REDIS_URL: redis://redis:6379/0
+      BOT_TOKEN: ${BOT_TOKEN:-}
+      JWT_SECRET: ${JWT_SECRET:-supersecret}
+      WEBHOOK_URL: ${WEBHOOK_URL:-}
+      WEBAPP_BASE_URL: ${WEBAPP_BASE_URL:-}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
+      ALLOW_TEST_AUTH: ${ALLOW_TEST_AUTH:-false}
+      DEBUG: ${DEBUG:-false}
     depends_on:
       db:
         condition: service_healthy
@@ -112,16 +71,12 @@ services:
       backend:
         condition: service_started
     command: ["python", "-m", "app.main_bot"]
-    restart: unless-stopped
     networks:
       - internal_network
 
   frontend:
     build:
       context: ./frontend
-    container_name: santagym_frontend
-    ports:
-      - "3000:80"
     depends_on:
       backend:
         condition: service_healthy
@@ -131,13 +86,6 @@ services:
       timeout: 5s
       retries: 5
       start_period: 10s
-    restart: unless-stopped
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.frontend.rule=Host(`gym.santariver.lol`)"
-      - "traefik.http.routers.frontend.entrypoints=websecure"
-      - "traefik.http.routers.frontend.tls.certresolver=myresolver"
-      - "traefik.http.services.frontend.loadbalancer.server.port=80"
     networks:
       - proxy_network
 
@@ -150,4 +98,3 @@ networks:
   proxy_network:
     name: proxy_network
   internal_network:
-    name: internal_network

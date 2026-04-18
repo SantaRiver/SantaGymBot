@@ -21,6 +21,7 @@ Icon
 .env
 .env.production
 .env.local
+.env.server
 *.pem
 *.key
 .claude/

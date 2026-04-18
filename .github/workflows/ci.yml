@@ -93,6 +93,12 @@ jobs:
       - name: Validate docker compose config
         run: docker compose config
 
+      - name: Validate local compose config
+        run: docker compose --env-file .env.local.example -f docker-compose.yml -f docker-compose.local.yml config
+
+      - name: Validate server compose config
+        run: docker compose --env-file .env.server.example -f docker-compose.yml -f docker-compose.server.yml config
+
       - name: Build backend image
         run: docker build -f backend/Dockerfile backend
 
