@@ -107,3 +107,13 @@ jobs:
 
       - name: Build frontend image
         run: docker build -f frontend/Dockerfile frontend
+
+  deploy_dev:
+    name: Deploy development
+    if: github.ref == 'refs/heads/develop'
+    needs:
+      - frontend
+      - backend
+      - docker
+    uses: ./.github/workflows/deploy-dev.yml
+    secrets: inherit
