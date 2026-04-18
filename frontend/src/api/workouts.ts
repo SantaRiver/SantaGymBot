@@ -61,6 +61,37 @@ export interface WorkoutReadWithDetails extends WorkoutRead {
   workout_exercises: WorkoutExerciseRead[];
 }
 
+export type StatsPeriod = 'month' | 'all';
+
+export interface WorkoutStatsSummary {
+  training_days: number;
+  completed_workouts: number;
+  total_sets: number;
+  total_duration_minutes: number;
+}
+
+export interface WorkoutStatsWeek {
+  week_start: string;
+  training_days: number;
+  completed_workouts: number;
+}
+
+export interface WorkoutStatsTopExercise {
+  exercise_id: string;
+  name: string;
+  workout_count: number;
+  set_count: number;
+  last_used_at: string | null;
+}
+
+export interface WorkoutStats {
+  period: StatsPeriod;
+  summary: WorkoutStatsSummary;
+  activity_by_week: WorkoutStatsWeek[];
+  top_exercises: WorkoutStatsTopExercise[];
+  generated_at: string;
+}
+
 export const workoutsApi = {
   create: async (data: { name?: string; status?: string; start_time?: string }): Promise<WorkoutRead> => {
     const res = await apiClient.post('/workouts/', data);
@@ -74,6 +105,13 @@ export const workoutsApi = {
 
   getById: async (id: string): Promise<WorkoutReadWithDetails> => {
     const res = await apiClient.get(`/workouts/${id}`);
+    return res.data;
+  },
+
+  getStats: async (period: StatsPeriod): Promise<WorkoutStats> => {
+    const res = await apiClient.get('/workouts/stats', {
+      params: { period },
+    });
     return res.data;
   },
 

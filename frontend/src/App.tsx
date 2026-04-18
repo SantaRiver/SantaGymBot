@@ -1,15 +1,17 @@
 import { useEffect } from 'react'
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { useAuthStore } from './store/auth'
 import { useWorkoutStore } from './store/workout'
 import { exercisesApi } from './api/exercises'
 import Dashboard from './pages/Dashboard'
+import StatsPage from './pages/StatsPage'
 import SettingsPage from './pages/SettingsPage'
 import WorkoutSession from './pages/WorkoutSession'
 import { Dumbbell } from 'lucide-react'
 import { ToastViewport } from './components/ToastViewport'
 import { useWorkoutStoreHydration } from './hooks/useWorkoutStoreHydration'
 import { initializeTelegramWebApp } from './lib/telegramWebApp'
+import { RootTabBar } from './components/RootTabBar'
 
 const FullScreenLoader = () => (
   <div className="app-shell">
@@ -23,6 +25,26 @@ const FullScreenLoader = () => (
 function RequireAuth({ children }: { children: JSX.Element }) {
   const { user, token } = useAuthStore();
   return (user && token) ? children : <Navigate to="/" replace />;
+}
+
+function AppLayout() {
+  const location = useLocation();
+  const isRootTabRoute = location.pathname === '/' || location.pathname === '/stats';
+
+  return (
+    <div className="app-shell">
+      <ToastViewport />
+      <Routes>
+        <Route path="/" element={<RequireAuth><Dashboard /></RequireAuth>} />
+        <Route path="/stats" element={<RequireAuth><StatsPage /></RequireAuth>} />
+        <Route path="/settings" element={<RequireAuth><SettingsPage /></RequireAuth>} />
+        <Route path="/workout" element={<RequireAuth><WorkoutSession mode="active" /></RequireAuth>} />
+        <Route path="/workout/:id" element={<RequireAuth><WorkoutSession mode="active" /></RequireAuth>} />
+        <Route path="/history/:id" element={<RequireAuth><WorkoutSession mode="history" /></RequireAuth>} />
+      </Routes>
+      {isRootTabRoute ? <RootTabBar /> : null}
+    </div>
+  );
 }
 
 function App() {
@@ -75,16 +97,7 @@ function App() {
 
   return (
     <Router>
-      <div className="app-shell">
-        <ToastViewport />
-        <Routes>
-          <Route path="/" element={<RequireAuth><Dashboard /></RequireAuth>} />
-          <Route path="/settings" element={<RequireAuth><SettingsPage /></RequireAuth>} />
-          <Route path="/workout" element={<RequireAuth><WorkoutSession mode="active" /></RequireAuth>} />
-          <Route path="/workout/:id" element={<RequireAuth><WorkoutSession mode="active" /></RequireAuth>} />
-          <Route path="/history/:id" element={<RequireAuth><WorkoutSession mode="history" /></RequireAuth>} />
-        </Routes>
-      </div>
+      <AppLayout />
     </Router>
   );
 }
