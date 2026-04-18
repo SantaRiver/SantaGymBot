@@ -3,27 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/auth';
 import { useWorkoutStore } from '../store/workout';
 import { useHistoryStore } from '../store/history';
+import { useStatsStore } from '../store/stats';
 import { Dumbbell, Calendar, Clock, ChevronRight, Settings } from 'lucide-react';
 import type { WorkoutReadWithDetails } from '../api/workouts';
 import { useWorkoutSession } from '../hooks/useWorkoutSession';
 import { useWorkoutStoreHydration } from '../hooks/useWorkoutStoreHydration';
-
-function formatDate(isoString: string): string {
-  return new Date(isoString).toLocaleDateString('ru-RU', {
-    day: 'numeric',
-    month: 'long',
-  });
-}
-
-function formatDuration(startIso: string, endIso: string): string {
-  const diffSeconds = Math.round(
-    (new Date(endIso).getTime() - new Date(startIso).getTime()) / 1000,
-  );
-  const h = Math.floor(diffSeconds / 3600);
-  const m = Math.floor((diffSeconds % 3600) / 60);
-  if (h > 0) return `${h} ч ${m} мин`;
-  return `${m} мин`;
-}
+import { formatDuration, formatWorkoutDate } from '../utils/formatting';
 
 function summarizeWorkout(workout: WorkoutReadWithDetails) {
   const exerciseCount = workout.workout_exercises.length;
@@ -31,10 +16,16 @@ function summarizeWorkout(workout: WorkoutReadWithDetails) {
   return { exerciseCount, setCount };
 }
 
-function WorkoutHistoryCard({ workout }: { workout: WorkoutReadWithDetails }) {
+function WorkoutHistoryCard({
+  workout,
+  timezone,
+}: {
+  workout: WorkoutReadWithDetails;
+  timezone: string;
+}) {
   const navigate = useNavigate();
   const { exerciseCount, setCount } = summarizeWorkout(workout);
-  const date = workout.start_time ? formatDate(workout.start_time) : 'Дата неизвестна';
+  const date = workout.start_time ? formatWorkoutDate(workout.start_time, timezone) : 'Дата неизвестна';
   const duration =
     workout.start_time && workout.end_time
       ? formatDuration(workout.start_time, workout.end_time)
@@ -65,7 +56,7 @@ function WorkoutHistoryCard({ workout }: { workout: WorkoutReadWithDetails }) {
   );
 }
 
-function HistorySection() {
+function HistorySection({ timezone }: { timezone: string }) {
   const { workouts, isLoading, error, fetchHistory } = useHistoryStore();
 
   useEffect(() => {
@@ -105,7 +96,7 @@ function HistorySection() {
   return (
     <>
       {workouts.map((workout) => (
-        <WorkoutHistoryCard key={workout.id} workout={workout} />
+        <WorkoutHistoryCard key={workout.id} workout={workout} timezone={timezone} />
       ))}
     </>
   );
@@ -116,8 +107,11 @@ export default function Dashboard() {
   const startWorkout = useWorkoutStore((state) => state.startWorkout);
   const { hasSession, status } = useWorkoutSession();
   const { isHydrated, supportsPersistence } = useWorkoutStoreHydration();
+  const statsEntry = useStatsStore((state) => state.statsByPeriod.month);
+  const fetchStats = useStatsStore((state) => state.fetchStats);
   const navigate = useNavigate();
   const [starting, setStarting] = useState(false);
+  const timezone = user?.timezone ?? 'UTC';
 
   useEffect(() => {
     if (!isHydrated || !hasSession || status === 'finished') {
@@ -126,6 +120,10 @@ export default function Dashboard() {
 
     navigate('/workout', { replace: true });
   }, [hasSession, isHydrated, navigate, status]);
+
+  useEffect(() => {
+    void fetchStats('month');
+  }, [fetchStats]);
 
   const handleStart = async () => {
     setStarting(true);
@@ -138,7 +136,7 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="app-screen">
+    <div className="app-screen app-screen-with-tabbar">
       <header className="mb-8 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Привет, {user?.username || 'Спортсмен'}! 👋</h1>
@@ -158,6 +156,31 @@ export default function Dashboard() {
         </div>
       </header>
 
+      <section className="mb-6 rounded-2xl bg-gradient-to-br from-tg-theme-button-color/14 via-tg-theme-secondary-bg-color to-tg-theme-button-color/5 p-5 shadow-sm">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-sm text-tg-theme-hint-color">Активность месяца</p>
+            <h2 className="mt-1 text-2xl font-bold">
+              {statsEntry.data?.summary.training_days ?? 0} дн. тренировок
+            </h2>
+            <p className="mt-2 text-sm text-tg-theme-hint-color">
+              {statsEntry.data
+                ? `${statsEntry.data.summary.completed_workouts} тренировок · ${statsEntry.data.summary.total_sets} подходов`
+                : statsEntry.isLoading
+                  ? 'Считаем статистику…'
+                  : 'В этом месяце тренировок пока не было'}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => navigate('/stats')}
+            className="rounded-xl bg-tg-theme-bg-color/80 px-3 py-2 text-sm font-semibold text-tg-theme-button-color active:scale-95 transition-transform"
+          >
+            Подробнее
+          </button>
+        </div>
+      </section>
+
       <div className="bg-tg-theme-secondary-bg-color rounded-2xl p-6 flex flex-col items-center justify-center text-center shadow-sm mb-6 border border-gray-100 dark:border-gray-800">
         <Dumbbell className="w-16 h-16 text-tg-theme-button-color mb-4" />
         <h2 className="text-xl font-bold mb-2">Начать тренировку</h2>
@@ -175,7 +198,7 @@ export default function Dashboard() {
 
       <div>
         <h3 className="font-semibold text-lg mb-4">История тренировок</h3>
-        <HistorySection />
+        <HistorySection timezone={timezone} />
       </div>
 
       <button
