@@ -40,6 +40,10 @@ services:
     restart: unless-stopped
 
   frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_URL: https://${API_HOST:-api.gym.example.com}/api/v1
     restart: unless-stopped
     labels:
       - "traefik.enable=true"
